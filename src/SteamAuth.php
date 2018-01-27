@@ -38,6 +38,7 @@ class SteamAuth implements SteamAuthInterface
 	 * Construct SteamAuth instance
 	 *
 	 * @param int $timeout
+	 * @throws Exception
 	 */
 	public function __construct($timeout = 15)
 	{
@@ -88,6 +89,7 @@ class SteamAuth implements SteamAuthInterface
 	 * Validate Steam Login
 	 *
 	 * @param int $timeout
+	 * @throws Exception if steamid is null
 	 * @return int|null
 	 */
 	private function validate($timeout)
@@ -133,15 +135,18 @@ class SteamAuth implements SteamAuthInterface
 			$steamid = null;
 		}
 
+		if (is_null($steamid)) {
+			throw new Exception('Steam Auth failed or timed out');
+		}
+
 		return $steamid;
 	}
 
 	public function userInfo() {
 		if (!is_null($this->steamid)) {
 			$info = simplexml_load_string(file_get_contents('http://steamcommunity.com/profiles/'.$this->steamid.'/?xml=1'),'SimpleXMLElement',LIBXML_NOCDATA);
+			$this->userInfo = $info;
 		}
-
-		$this->userInfo = $info;
 	}
 
 	/**
