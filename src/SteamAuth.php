@@ -21,6 +21,13 @@ class SteamAuth implements SteamAuthInterface
 	const OPENID_SPECS = 'http://specs.openid.net/auth/2.0';
 
 	/**
+	 * User's SteamID (64-bit)
+	 *
+	 * @var int
+	 */
+	private $steamid;
+
+	/**
 	 * Build Steam Login URL
 	 *
 	 * @param string $return
@@ -103,11 +110,19 @@ class SteamAuth implements SteamAuthInterface
 			preg_match("#^http://steamcommunity.com/openid/id/([0-9]{17,25})#", $_GET['openid_claimed_id'], $matches);
 			$steamid = is_numeric($matches[1]) ? $matches[1] : 0;
 			$steamid = preg_match("#is_valid\s*:\s*true#i", $result) == 1 ? $steamid : null;
+			$this->steamid = $steamid;
 		} catch (Exception $e) {
 			$steamid = null;
 		}
 
 		return $steamid;
+	}
+
+	public function userInfo() {
+		if (!is_null($this->steamid)) {
+			$info = simplexml_load_string(file_get_contents('http://steamcommunity.com/profiles/'.$this->steamid.'/?xml=1'),'SimpleXMLElement',LIBXML_NOCDATA);
+		}
+		return $info ?? null;
 	}
 
 	/**
