@@ -25,7 +25,25 @@ class SteamAuth implements SteamAuthInterface
 	 *
 	 * @var int
 	 */
-	private $steamid;
+	public $steamid;
+
+	/**
+	 * User's Steam Info
+	 *
+	 * @var mixed
+	 */
+	public $userInfo;
+
+	/**
+	 * Construct SteamAuth instance
+	 *
+	 * @param int $timeout
+	 */
+	public function __construct($timeout = 15)
+	{
+		$this->validate($timeout);
+		$this->userInfo();
+	}
 
 	/**
 	 * Build Steam Login URL
@@ -72,7 +90,7 @@ class SteamAuth implements SteamAuthInterface
 	 * @param int $timeout
 	 * @return int|null
 	 */
-	public function validate($timeout = 15)
+	private function validate($timeout)
 	{
 		try {
 			$params = [
@@ -122,7 +140,8 @@ class SteamAuth implements SteamAuthInterface
 		if (!is_null($this->steamid)) {
 			$info = simplexml_load_string(file_get_contents('http://steamcommunity.com/profiles/'.$this->steamid.'/?xml=1'),'SimpleXMLElement',LIBXML_NOCDATA);
 		}
-		return $info ?? null;
+
+		$this->userInfo = $info;
 	}
 
 	/**
