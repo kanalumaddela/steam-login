@@ -42,8 +42,10 @@ class SteamAuth implements SteamAuthInterface
 	 */
 	public function __construct($timeout = 15)
 	{
-		$this->validate($timeout);
-		$this->userInfo();
+		if (self::validRequest()) {
+			$this->validate($timeout);
+			$this->userInfo();
+		}
 	}
 
 	/**
