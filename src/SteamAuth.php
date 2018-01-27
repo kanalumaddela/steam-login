@@ -32,7 +32,7 @@ class SteamAuth implements SteamAuthInterface
 	 *
 	 * @var mixed
 	 */
-	public $userInfo;
+	public $info;
 
 	/**
 	 * Construct SteamAuth instance
@@ -144,10 +144,16 @@ class SteamAuth implements SteamAuthInterface
 		return $steamid;
 	}
 
-	public function userInfo() {
+	/**
+	 * Get player's information via Steam profile XML.
+	 *
+	 */
+	private function userInfo() {
 		if (!is_null($this->steamid)) {
 			$info = simplexml_load_string(file_get_contents('http://steamcommunity.com/profiles/'.$this->steamid.'/?xml=1'),'SimpleXMLElement',LIBXML_NOCDATA);
-			$this->userInfo = $info;
+			$info->name = $info->steamID;
+			unset($info->steamID);
+			$this->info = $info;
 		}
 	}
 
