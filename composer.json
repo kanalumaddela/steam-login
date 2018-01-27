@@ -1,0 +1,23 @@
+{
+    "name": "kanalumaddela/steam-login",
+    "description": "Steam Auth PHP library",
+    "version": "0.0.1",
+    "keywords": ["steam", "auth"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Samuel Maddela",
+            "email": "github@maddela.org",
+            "homepage": "https://www.maddela.org",
+            "role": "Developer"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "SteamAuth\\": "src/"
+        }
+    },
+    "require": {
+        "php": "^7.0"
+    }
+}
