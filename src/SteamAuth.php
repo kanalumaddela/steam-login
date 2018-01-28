@@ -197,18 +197,18 @@ class SteamAuth implements SteamAuthInterface
 			switch ($method) {
 				case 'xml':
 					$info = simplexml_load_string(file_get_contents('http://steamcommunity.com/profiles/'.$this->steamid.'/?xml=1'),'SimpleXMLElement',LIBXML_NOCDATA);
-					$this->info->name = $info->steamID;
-					$this->info->realName = $info->realname;
-					$this->info->playerState = ucfirst($info->onlineState);
-					$this->info->stateMessage = $info->stateMessage;
-					$this->info->privacyState = ucfirst($info->privacyState);
-					$this->info->visibilityState = $info->visibilityState;
-					$this->info->avatarSmall = $info->avatarIcon;
-					$this->info->avatarMedium = $info->avatarMedium;
-					$this->info->avatarFull = $info->avatarFull;
-					$this->info->profileURL = $info->customURL ?? null;
-					$this->info->joined = $info->memberSince;
-					$this->info->summary = $info->summary;
+					$this->info->name = (int)$info->steamID;
+					$this->info->realName = (string)$info->realname;
+					$this->info->playerState = ucfirst((string)$info->onlineState);
+					$this->info->stateMessage = (string)$info->stateMessage;
+					$this->info->privacyState = ucfirst((string)$info->privacyState);
+					$this->info->visibilityState = (int)$info->visibilityState;
+					$this->info->avatarSmall = (string)$info->avatarIcon;
+					$this->info->avatarMedium = (string)$info->avatarMedium;
+					$this->info->avatarFull =(string) $info->avatarFull;
+					$this->info->profileURL = (string)$info->customURL ?? null;
+					$this->info->joined = (string)$info->memberSince;
+					$this->info->summary = (string)$info->summary;
 					break;
 				case 'api':
 					$info = json_decode(file_get_contents(sprintf(self::STEAM_API, $this->api_key, $this->steamid)));
