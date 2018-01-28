@@ -212,6 +212,7 @@ class SteamAuth implements SteamAuthInterface
 					break;
 				case 'api':
 					$info = json_decode(file_get_contents(sprintf(self::STEAM_API, $this->api_key, $this->steamid)));
+					$info = $info->response->players[0];
 					switch ($info->personastate) {
 						case 0:
 							$info->personastate = 'Offline';
