@@ -192,6 +192,7 @@ class SteamAuth implements SteamAuthInterface
 	 *
 	 */
 	private function userInfo($method) {
+		$this->info = new \stdClass();
 		if (!is_null($this->steamid)) {
 			switch ($method) {
 				case 'xml':
