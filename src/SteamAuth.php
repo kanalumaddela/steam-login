@@ -53,21 +53,21 @@ class SteamAuth implements SteamAuthInterface
 	 *
 	 * @var int
 	 */
-	private $timeout;
+	protected $timeout;
 
 	/**
 	 * Method of retrieving player's info
 	 *
 	 * @var string
 	 */
-	private $method;
+	protected $method;
 
 	/**
 	 * Steam API key used to retrieve player's info
 	 *
 	 * @var	string
 	 */
-	private $api_key;
+	protected $api_key;
 
 	/**
 	 * Construct SteamAuth instance
