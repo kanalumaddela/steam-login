@@ -21,6 +21,20 @@ class SteamAuth implements SteamAuthInterface
 	const OPENID_SPECS = 'http://specs.openid.net/auth/2.0';
 
 	/**
+	 * Steam API GetPlayerSummaries
+	 *
+	 * @var string
+	 */
+	const STEAM_API = 'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s';
+
+	/**
+	 * Steam Profile XML
+	 *
+	 * @var string
+	 */
+	const STEAM_XML = 'http://steamcommunity.com/profiles/%s/?xml=1';
+
+	/**
 	 * User's SteamID (64-bit)
 	 *
 	 * @var int
@@ -35,16 +49,45 @@ class SteamAuth implements SteamAuthInterface
 	public $info;
 
 	/**
+	 * Steam validation timeout
+	 *
+	 * @var int
+	 */
+	private $timeout;
+
+	/**
+	 * Method of retrieving player's info
+	 *
+	 * @var string
+	 */
+	private $method;
+
+	/**
+	 * Steam API key used to retrieve player's info
+	 *
+	 * @var	string
+	 */
+	private $api_key;
+
+	/**
 	 * Construct SteamAuth instance
 	 *
-	 * @param int $timeout
+	 * @param array $options
 	 * @throws Exception
 	 */
-	public function __construct($timeout = 15)
+	public function __construct(array $options)
 	{
+		$this->timeout = $options['timeout'] ?? 15;
+		$this->method = $options['method'] ?? 'xml';
+		if ($this->method == 'api') {
+			if (empty($options['api_key'])) {
+				throw new Exception('Steam API key not given');
+			}
+			$this->api_key = $options['api_key'];
+		}
 		if (self::validRequest()) {
-			$this->validate($timeout);
-			$this->userInfo();
+			$this->validate($this->timeout);
+			$this->userInfo($this->method);
 		}
 	}
 
@@ -52,7 +95,7 @@ class SteamAuth implements SteamAuthInterface
 	 * Build Steam Login URL
 	 *
 	 * @param string $return
-	 * @throws Exception if $return is not valid
+	 * @throws Exception if $return is not valid url
 	 * @return string
 	 */
 	public static function loginUrl($return = null)
@@ -148,12 +191,64 @@ class SteamAuth implements SteamAuthInterface
 	 * Get player's information via Steam profile XML.
 	 *
 	 */
-	private function userInfo() {
+	private function userInfo($method) {
 		if (!is_null($this->steamid)) {
-			$info = simplexml_load_string(file_get_contents('http://steamcommunity.com/profiles/'.$this->steamid.'/?xml=1'),'SimpleXMLElement',LIBXML_NOCDATA);
-			$info->name = $info->steamID;
-			unset($info->steamID);
-			$this->info = $info;
+			switch ($method) {
+				case 'xml':
+					$info = simplexml_load_string(file_get_contents('http://steamcommunity.com/profiles/'.$this->steamid.'/?xml=1'),'SimpleXMLElement',LIBXML_NOCDATA);
+					$this->info->name = $info->steamID;
+					$this->info->realName = $info->realname;
+					$this->info->playerState = ucfirst($info->onlineState);
+					$this->info->stateMessage = $info->stateMessage;
+					$this->info->privacyState = ucfirst($info->privacyState);
+					$this->info->visibilityState = $info->visibilityState;
+					$this->info->avatarSmall = $info->avatarIcon;
+					$this->info->avatarMedium = $info->avatarMedium;
+					$this->info->avatarFull = $info->avatarFull;
+					$this->info->profileURL = $info->customURL ?? null;
+					$this->info->joined = $info->memberSince;
+					$this->info->summary = $info->summary;
+					break;
+				case 'api':
+					$info = json_decode(file_get_contents(sprintf(self::STEAM_API, $this->api_key, $this->steamid)));
+					switch ($info->personastate) {
+						case 0:
+							$info->personastate = 'Offline';
+							break;
+						case 1:
+							$info->personastate = 'Online';
+							break;
+						case 2:
+							$info->personastate = 'Busy';
+							break;
+						case 3:
+							$info->personastate = 'Away';
+							break;
+						case 4:
+							$info->personastate = 'Snooze';
+							break;
+						case 5:
+							$info->personastate = 'Looking to trade';
+							break;
+						case 6:
+							$info->personastate = 'Looking to play';
+							break;
+					}
+					$this->info->name = $info->personaname;
+					$this->info->realName = $info->realname;
+					$this->info->playerState = $info->personastate;
+					$this->info->stateMessage = $info->personastate;
+					$this->info->privacyState = $info->communityvisibilitystate == 1 ? 'Private' : 'Public';
+					$this->info->visibilityState = $info->communityvisibilitystate;
+					$this->info->avatarSmall = $info->avatar;
+					$this->info->avatarMedium = $info->avatarmedium;
+					$this->info->avatarFull = $info->avatarfull;
+					$this->info->profileURL = $info->profileurl;
+					$this->info->joined = date('F jS, Y',$info->timecreated);
+					break;
+				default:
+					break;
+			}
 		}
 	}
 

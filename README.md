@@ -24,8 +24,22 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 `SteamAuth::validRequest()` - checks if the URL has the required parameters to validate the post steam login
 
 
-`$SteamAuth->validate()` - validates the request and returns a user's steamid (64 bit)
-`$SteamAuth->userInfo()` - retrieves a user's info via XML from their profile
+`$player = new SteamAuth()` - validates and gets player's info, throws an exception if validation fails
+
+`$player->steamid` - the player's steamid if validated successfully
+`$player->info->name` - player's name
+`$player->info->onlineState` - player's online state
+`$player->info->privacyState` - player's profile visibility
+`$player->info->stateMessage` - player's stateMessage
+`$player->info->visibilityState` - player's visibilityState
+
+
+`$player = new SteamAuth($timeout)` - validates and gets info user, timeout defaults to 15
+
+| var | description | example |
+| :--- | :--- | ---: |
+| $player->steamid | player's 64 bit steamid | 76561198152390718 |
+| $player->steamid | player's name | kanalumaddela |
 
 ### Example
 ```
