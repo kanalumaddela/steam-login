@@ -240,7 +240,7 @@ class SteamAuth implements SteamAuthInterface
 					$this->info->realName = $info->realname ?? '';
 					$this->info->playerState = $info->personastate;
 					$this->info->stateMessage = $info->personastate;
-					$this->info->privacyState = $info->communityvisibilitystate == 1 ? 'Private' : 'Public';
+					$this->info->privacyState = ($info->communityvisibilitystate == 1 || $info->communityvisibilitystate == 2) ? 'Private' : 'Public';
 					$this->info->visibilityState = $info->communityvisibilitystate;
 					$this->info->avatarSmall = $info->avatar;
 					$this->info->avatarMedium = $info->avatarmedium;
