@@ -197,7 +197,7 @@ class SteamAuth implements SteamAuthInterface
 			switch ($method) {
 				case 'xml':
 					$info = simplexml_load_string(file_get_contents('http://steamcommunity.com/profiles/'.$this->steamid.'/?xml=1'),'SimpleXMLElement',LIBXML_NOCDATA);
-					$this->info->name = (int)$info->steamID;
+					$this->info->name = (string)$info->steamID;
 					$this->info->realName = (string)$info->realname;
 					$this->info->playerState = ucfirst((string)$info->onlineState);
 					$this->info->stateMessage = (string)$info->stateMessage;
