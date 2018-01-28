@@ -32,7 +32,7 @@ class SteamAuth implements SteamAuthInterface
 	 *
 	 * @var string
 	 */
-	const STEAM_XML = 'http://steamcommunity.com/profiles/%s/?xml=1';
+	const STEAM_PROFILE = 'http://steamcommunity.com/profiles/%s';
 
 	/**
 	 * User's SteamID (64-bit)
@@ -196,7 +196,7 @@ class SteamAuth implements SteamAuthInterface
 		if (!is_null($this->steamid)) {
 			switch ($method) {
 				case 'xml':
-					$info = simplexml_load_string(file_get_contents('http://steamcommunity.com/profiles/'.$this->steamid.'/?xml=1'),'SimpleXMLElement',LIBXML_NOCDATA);
+					$info = simplexml_load_string(file_get_contents(sprintf(self::STEAM_PROFILE.'/?xml=1', $this->steamid)),'SimpleXMLElement',LIBXML_NOCDATA);
 					$this->info->name = (string)$info->steamID;
 					$this->info->realName = (string)$info->realname;
 					$this->info->playerState = ucfirst((string)$info->onlineState);
@@ -206,9 +206,9 @@ class SteamAuth implements SteamAuthInterface
 					$this->info->avatarSmall = (string)$info->avatarIcon;
 					$this->info->avatarMedium = (string)$info->avatarMedium;
 					$this->info->avatarFull =(string) $info->avatarFull;
-					$this->info->profileURL = (string)$info->customURL ?? null;
-					$this->info->joined = (string)$info->memberSince;
-					$this->info->summary = (string)$info->summary;
+					$this->info->profileURL = (string)$info->customURL ?? sprintf(self::STEAM_PROFILE, $this->steamid);
+					$this->info->joined = (string)$info->memberSince ?? null;
+					$this->info->summary = (string)$info->summary ?? null;
 					break;
 				case 'api':
 					$info = json_decode(file_get_contents(sprintf(self::STEAM_API, $this->api_key, $this->steamid)));
