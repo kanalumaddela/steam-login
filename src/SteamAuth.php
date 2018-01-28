@@ -237,7 +237,7 @@ class SteamAuth implements SteamAuthInterface
 							break;
 					}
 					$this->info->name = $info->personaname;
-					$this->info->realName = $info->realname;
+					$this->info->realName = $info->realname ?? '';
 					$this->info->playerState = $info->personastate;
 					$this->info->stateMessage = $info->personastate;
 					$this->info->privacyState = $info->communityvisibilitystate == 1 ? 'Private' : 'Public';
@@ -246,7 +246,7 @@ class SteamAuth implements SteamAuthInterface
 					$this->info->avatarMedium = $info->avatarmedium;
 					$this->info->avatarFull = $info->avatarfull;
 					$this->info->profileURL = $info->profileurl;
-					$this->info->joined = date('F jS, Y',$info->timecreated);
+					$this->info->joined = isset($info->timecreated) ? date('F jS, Y', $info->timecreated) : null;
 					break;
 				default:
 					break;
