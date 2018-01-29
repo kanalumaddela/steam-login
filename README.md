@@ -25,7 +25,7 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 
 ---
 
-#### Validation
+### Validation
 
 `$player = new SteamAuth($options)` - SteamAuth instance
 
@@ -47,12 +47,14 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 | $player->avatarLarge | large avatar | ^ |
 | $player->joined | date of joining steam | January 1st, 2018 (format is consistent with XML method) |
 
+---
+
 ### Example
 ```
 <?php
 
+session_start();
 require_once 'vendor/autoload.php';
-
 use kanalumaddela\SteamAuth\SteamAuth;
 
 echo '<a href="?login">login w steam</a><br><br>';
@@ -68,11 +70,11 @@ $options = [
 ];
 
 if (SteamAuth::validRequest()) {
-	$user = new SteamAuth($options);
-	if ($user->steamid) {
-		$_SESSION = (array)$user;
+	$user = new SteamAuth($options); // validates and gets user's info
+	if ($user->steamid) { // if steamid is null, validation failed
+		$_SESSION = (array)$user; // convert object to array to be saved into session
 	}
-	header('Location: '.$_GET['openid_return_to']);
+	header('Location: '.$_GET['openid_return_to']); // redirect 
 }
 
 echo '<pre>';
