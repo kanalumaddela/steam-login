@@ -327,6 +327,9 @@ class SteamAuth implements SteamAuthInterface
 					break;
 			}
 		}
+		$this->timeout = null;
+		$this->method= null;
+		$this->api_key= null;
 	}
 
 	/**
