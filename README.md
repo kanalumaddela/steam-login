@@ -31,7 +31,7 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 *Italicized* - API method only
 
 | var | description | example |
-| :--- | :--- | ---: |
+| :------- | :--- | ---: |
 | $player->steamid | 64 bit steamid | 76561198152390718 |
 | $player->name | name | kanalumaddela |
 | $player->realName | real name | Sam |
@@ -42,7 +42,7 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 | $player->avatarSmall | small avatar | image from (non-https)**cdn.akamai.steamstatic.com** / (https)*steamcdn-a.akamaihd.net*|
 | $player->avatarMedium | medium avatar | ^ |
 | $player->avatarLarge | large avatar | ^ |
-| $player->joined | date of joining steam, does not show for private profiles | January 1st, 2018 (format is like this to be consistent with XML method) |
+| $player->joined | date of joining steam | January 1st, 2018 (format is consistent with XML method) |
 
 ### Example
 ```
