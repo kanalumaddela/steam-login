@@ -52,7 +52,7 @@ require_once 'vendor/autoload.php';
 
 use kanalumaddela\SteamAuth\SteamAuth;
 
-echo '<a href="?login">test steam auth</a><br><br>';
+echo '<a href="?login">login w steam</a><br><br>';
 
 if ($_SERVER['QUERY_STRING'] == 'login') {
 	header('Location: '.SteamAuth::loginUrl());
