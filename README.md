@@ -48,9 +48,11 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 ```
 <?php
 
-use kanalumaddela\SteamAuth;
+require_once 'vendor/autoload.php';
 
-echo '<a href="?login">login w steam</a><br><br>';
+use kanalumaddela\SteamAuth\SteamAuth;
+
+echo '<a href="?login">test steam auth</a><br><br>';
 
 if ($_SERVER['QUERY_STRING'] == 'login') {
 	header('Location: '.SteamAuth::loginUrl());
@@ -58,14 +60,19 @@ if ($_SERVER['QUERY_STRING'] == 'login') {
 
 $options = [
 	'timeout' => 30,
-	'method' => 'xml',
+	'method' => 'api',
+	'api_key' => 'hehe you wish'
 ];
 
 if (SteamAuth::validRequest()) {
 	$user = new SteamAuth($options);
-	echo "<pre>";
-	print_r($user);
-	echo "</pre>";
+	if ($user->steamid) {
+		$_SESSION = (array)$user;
+	}
+	header('Location: '.$_GET['openid_return_to']);
 }
+
+echo '<pre>';
+var_dump($_SESSION);
 
 ```
