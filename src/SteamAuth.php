@@ -130,21 +130,21 @@ class SteamAuth implements SteamAuthInterface
 	 *
 	 * @var int
 	 */
-	protected $timeout;
+	private static $timeout;
 
 	/**
 	 * Method of retrieving player's info
 	 *
 	 * @var string
 	 */
-	protected $method;
+	private static $method;
 
 	/**
 	 * Steam API key used to retrieve player's info
 	 *
 	 * @var	string
 	 */
-	protected $api_key;
+	private static $api_key;
 
 	/**
 	 * Construct SteamAuth instance
@@ -154,17 +154,17 @@ class SteamAuth implements SteamAuthInterface
 	 */
 	public function __construct(array $options)
 	{
-		$this->timeout = $options['timeout'] ?? 15;
-		$this->method = $options['method'] ?? 'xml';
-		if ($this->method == 'api') {
+		self::$timeout = $options['timeout'] ?? 15;
+		self::$method = $options['method'] ?? 'xml';
+		if (self::$method == 'api') {
 			if (empty($options['api_key'])) {
 				throw new Exception('Steam API key not given');
 			}
-			$this->api_key = $options['api_key'];
+			self::$api_key = $options['api_key'];
 		}
 		if (self::validRequest()) {
-			$this->validate($this->timeout);
-			$this->userInfo($this->method);
+			$this->validate(self::$timeout);
+			$this->userInfo(self::$method);
 		}
 	}
 
@@ -286,7 +286,7 @@ class SteamAuth implements SteamAuthInterface
 					$this->joined = !empty($info->joined) ? $info->joined : null;
 					break;
 				case 'api':
-					$info = json_decode(file_get_contents(sprintf(self::STEAM_API, $this->api_key, $this->steamid)));
+					$info = json_decode(file_get_contents(sprintf(self::STEAM_API, self::$api_key, $this->steamid)));
 					$info = $info->response->players[0];
 					switch ($info->personastate) {
 						case 0:
@@ -327,9 +327,6 @@ class SteamAuth implements SteamAuthInterface
 					break;
 			}
 		}
-		$this->timeout = null;
-		$this->method= null;
-		$this->api_key= null;
 	}
 
 	/**
