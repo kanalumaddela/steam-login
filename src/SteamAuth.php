@@ -320,7 +320,7 @@ class SteamAuth implements SteamAuthInterface
 					$this->avatarSmall = $info->avatar;
 					$this->avatarMedium = $info->avatarmedium;
 					$this->avatarLarge = $info->avatarfull;
-					$this->profileURL = $info->profileurl;
+					$this->profileURL = str_replace('http://', 'https://', $info->profileurl);
 					$this->joined = isset($info->timecreated) ? date('F jS, Y', $info->timecreated) : null;
 					break;
 				default:
