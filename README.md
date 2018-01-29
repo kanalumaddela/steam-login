@@ -23,7 +23,7 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 
 `SteamAuth::validRequest()` - checks if the URL has the required parameters to validate the post steam login
 
-------
+---
 
 #### Validation
 
