@@ -23,23 +23,26 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 
 `SteamAuth::validRequest()` - checks if the URL has the required parameters to validate the post steam login
 
+`$player = new SteamAuth($options)` - SteamAuth instance
 
-`$player = new SteamAuth()` - validates and gets player's info, throws an exception if validation fails
+#### Properties
 
-`$player->steamid` - the player's steamid if validated successfully
-`$player->info->name` - player's name
-`$player->info->onlineState` - player's online state
-`$player->info->privacyState` - player's profile visibility
-`$player->info->stateMessage` - player's stateMessage
-`$player->info->visibilityState` - player's visibilityState
-
-
-`$player = new SteamAuth($timeout)` - validates and gets info user, timeout defaults to 15
+**Bolded** - XML method only
+*Italicized* - API method only
 
 | var | description | example |
 | :--- | :--- | ---: |
-| $player->steamid | player's 64 bit steamid | 76561198152390718 |
-| $player->steamid | player's name | kanalumaddela |
+| $player->steamid | 64 bit steamid | 76561198152390718 |
+| $player->name | name | kanalumaddela |
+| $player->realName | real name | Sam |
+| $player->playerState | status | Online/Offline |
+| $player->stateMessage | status message | Online/Offline **Last Online/In Game <game>** *Busy/Away/Snooze/Looking to <trade/play>* |
+| $player->privacyState | profile privacy | Private **Friendsonly** |
+| $player->visibilityState | visibility state | <1/2/3> |
+| $player->avatarSmall | small avatar | image from (non-https)**cdn.akamai.steamstatic.com** / (https)*steamcdn-a.akamaihd.net*|
+| $player->avatarMedium | medium avatar | ^ |
+| $player->avatarLarge | large avatar | ^ |
+| $player->joined | date of joining steam, does not show for private profiles | January 1st, 2018 (format is like this to be consistent with XML method) |
 
 ### Example
 ```
@@ -47,5 +50,22 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 
 use kanalumaddela\SteamAuth;
 
+echo '<a href="?login">login w steam</a><br><br>';
+
+if ($_SERVER['QUERY_STRING'] == 'login') {
+	header('Location: '.SteamAuth::loginUrl());
+}
+
+$options = [
+	'timeout' => 30,
+	'method' => 'xml',
+];
+
+if (SteamAuth::validRequest()) {
+	$user = new SteamAuth($options);
+	echo "<pre>";
+	print_r($user);
+	echo "</pre>";
+}
 
 ```
