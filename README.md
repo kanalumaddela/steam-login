@@ -56,17 +56,17 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 ---
 
 ### Example
-```
+```php
 <?php
 
 session_start();
-require_once __DIR__'/vendor/autoload.php';
-use kanalumaddela\SteamAuth\SteamAuth;
+require_once __DIR__.'/vendor/autoload.php';
+use kanalumaddela\SteamLogin\SteamLogin;
 
 echo '<a href="?login">login w steam</a><br><br>';
 
 if ($_SERVER['QUERY_STRING'] == 'login') {
-	header('Location: '.SteamAuth::loginUrl());
+	header('Location: '.SteamLogin::loginUrl());
 }
 
 $options = [
@@ -76,17 +76,16 @@ $options = [
 ];
 
 // init instance
-$steamauth = new SteamAuth($options);
+$steamlogin = new SteamLogin($options);
 
-if ($steamauth->validate()) {
-    $user = $steamauth->player;
+if ($steamlogin::validRequest()) {
+	$user = $steamlogin->player;
 	if ($user->steamid) { // if steamid is null, validation failed
 		$_SESSION = (array)$user; // convert object to array to be saved into session
 	}
-	header('Location: '.$_GET['openid_return_to']); // redirect 
+	header('Location: '.$_GET['openid_return_to']); // redirect
 }
 
 echo '<pre>';
 var_dump($_SESSION);
-
 ```
