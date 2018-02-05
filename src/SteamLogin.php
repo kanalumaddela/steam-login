@@ -1,10 +1,10 @@
 <?php
 
-namespace kanalumaddela\SteamAuth;
+namespace kanalumaddela\SteamLogin;
 
 use Exception;
 
-class SteamAuth implements SteamAuthInterface
+class SteamLogin implements SteamLoginInterface
 {
 	/**
 	 * Steam OpenID URL
@@ -130,21 +130,21 @@ class SteamAuth implements SteamAuthInterface
 	 *
 	 * @var int
 	 */
-	private static $timeout;
+	private $timeout;
 
 	/**
 	 * Method of retrieving player's info
 	 *
 	 * @var string
 	 */
-	private static $method;
+	private $method;
 
 	/**
 	 * Steam API key used to retrieve player's info
 	 *
 	 * @var	string
 	 */
-	private static $api_key;
+	private $api_key;
 
 	/**
 	 * Construct SteamAuth instance
@@ -154,17 +154,17 @@ class SteamAuth implements SteamAuthInterface
 	 */
 	public function __construct(array $options)
 	{
-		self::$timeout = $options['timeout'] ?? 15;
-		self::$method = $options['method'] ?? 'xml';
+		$this->timeout = isset($options['timeout']) ? ['timeout'] : 15;
+		$this->method = isset($options['method']) ? $options['method'] : 'xml';
 		if (self::$method == 'api') {
 			if (empty($options['api_key'])) {
 				throw new Exception('Steam API key not given');
 			}
-			self::$api_key = $options['api_key'];
+			$this->api_key = $options['api_key'];
 		}
 		if (self::validRequest()) {
-			$this->validate(self::$timeout);
-			$this->userInfo(self::$method);
+			$this->validate();
+			$this->userInfo();
 		}
 	}
 
@@ -210,11 +210,10 @@ class SteamAuth implements SteamAuthInterface
 	/**
 	 * Validate Steam Login
 	 *
-	 * @param int $timeout
 	 * @throws Exception if steamid is null
 	 * @return int|null
 	 */
-	private function validate($timeout)
+	private function validate()
 	{
 		try {
 			$params = [
@@ -235,19 +234,21 @@ class SteamAuth implements SteamAuthInterface
 
 			$data =  http_build_query($params);
 
-			$context = stream_context_create(array(
-				'http' => array(
-					'method' => 'POST',
-					'header' =>
-						"Accept-language: en\r\n".
-						"Content-type: application/x-www-form-urlencoded\r\n" .
-						"Content-Length: " . strlen($data) . "\r\n",
-					'content' => $data,
-					'timeout' => $timeout
-				),
-			));
+			$curl = curl_init();
+			curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+			curl_setopt($curl, CURLOPT_POST, 1);
+			curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($curl, CURLOPT_TIMEOUT, $this->timeout);
+			curl_setopt($curl, CURLOPT_HTTPHEADER, [
+				"Accept-language: en",
+				"Content-type: application/x-www-form-urlencoded",
+				"Content-Length: " . strlen($data),
+			]);
 
-			$result = file_get_contents(self::OPENID_STEAM, false, $context);
+			curl_setopt($curl, CURLOPT_URL, self::OPENID_STEAM);
+			$result = curl_exec($curl);
+			curl_close($curl);
 
 			preg_match("#^http://steamcommunity.com/openid/id/([0-9]{17,25})#", $_GET['openid_claimed_id'], $matches);
 			$steamid = is_numeric($matches[1]) ? $matches[1] : 0;
@@ -261,15 +262,14 @@ class SteamAuth implements SteamAuthInterface
 	}
 
 	/**
-	 * Get and set player's information via Steam profile XML.
-	 *
-	 * @param $method
+	 * Get and set player's information via Steam profile XML or API
 	 */
-	private function userInfo($method) {
+	private function userInfo()
+	{
 		if (!is_null($this->steamid)) {
-			switch ($method) {
+			switch ($this->method) {
 				case 'xml':
-					$info = simplexml_load_string(file_get_contents(sprintf(self::STEAM_PROFILE.'/?xml=1', $this->steamid)),'SimpleXMLElement',LIBXML_NOCDATA);
+					$info = simplexml_load_string(self::cURL(sprintf(self::STEAM_PROFILE.'/?xml=1', $this->steamid)),'SimpleXMLElement',LIBXML_NOCDATA);
 					$info->customURL = (string)$info->customURL;
 					$info->joined = (string)$info->memberSince;
 
@@ -286,7 +286,7 @@ class SteamAuth implements SteamAuthInterface
 					$this->joined = !empty($info->joined) ? $info->joined : null;
 					break;
 				case 'api':
-					$info = json_decode(file_get_contents(sprintf(self::STEAM_API, self::$api_key, $this->steamid)));
+					$info = json_decode(self::cURL(sprintf(self::STEAM_API, self::$api_key, $this->steamid)));
 					$info = $info->response->players[0];
 					switch ($info->personastate) {
 						case 0:
@@ -312,7 +312,7 @@ class SteamAuth implements SteamAuthInterface
 							break;
 					}
 					$this->name = $info->personaname;
-					$this->realName = $info->realname ?? null;
+					$this->realName =  isset($info->realname) ? $info->realname : null;
 					$this->playerState = $info->personastate != 0 ? 'Online' : 'Offline';
 					$this->stateMessage = $info->personastate;
 					$this->privacyState = ($info->communityvisibilitystate == 1 || $info->communityvisibilitystate == 2) ? 'Private' : 'Public';
@@ -335,7 +335,8 @@ class SteamAuth implements SteamAuthInterface
 	 * @param string $url
 	 * @return boolean
 	 */
-	private static function isUrl($url) {
+	private static function isUrl($url)
+	{
 		$valid = false;
 		if (filter_var($url, FILTER_VALIDATE_URL)) {
 			set_error_handler(function() {});
@@ -346,5 +347,23 @@ class SteamAuth implements SteamAuthInterface
 		}
 
 		return $valid;
+	}
+
+	/**
+	 * Basic cURL GET
+	 *
+	 * @param string $url
+	 * @return string
+	 */
+	private static function cURL($url)
+	{
+		$curl = curl_init();
+		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($curl, CURLOPT_URL, $url);
+		$data = curl_exec($curl);
+		curl_close($curl);
+
+		return $data;
 	}
 }
