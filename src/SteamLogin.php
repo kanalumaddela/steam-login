@@ -217,7 +217,7 @@ class SteamLogin implements SteamLoginInterface
 		if (!is_null($this->player->steamid)) {
 			switch ($this->method) {
 				case 'xml':
-					$info = simplexml_load_string(self::cURL(sprintf(self::STEAM_PROFILE.'/?xml=1', $this->player->steamid)),'SimpleXMLElement',LIBXML_NOCDATA);
+					$info = simplexml_load_string(self::curl(sprintf(str_replace('https://', 'http://', self::STEAM_PROFILE).'/?xml=1', $this->player->steamid)),'SimpleXMLElement',LIBXML_NOCDATA);
 					$info->customURL = (string)$info->customURL;
 					$info->joined = (string)$info->memberSince;
 
@@ -234,7 +234,7 @@ class SteamLogin implements SteamLoginInterface
 					$this->player->joined = !empty($info->joined) ? $info->joined : null;
 					break;
 				case 'api':
-					$info = json_decode(self::cURL(sprintf(self::STEAM_API, $this->api_key, $this->player->steamid)));
+					$info = json_decode(self::curl(sprintf(self::STEAM_API, $this->api_key, $this->player->steamid)));
 					$info = $info->response->players[0];
 					switch ($info->personastate) {
 						case 0:
@@ -303,7 +303,7 @@ class SteamLogin implements SteamLoginInterface
 	 * @param string $url
 	 * @return string
 	 */
-	private static function cURL($url)
+	private static function curl($url)
 	{
 		$curl = curl_init();
 		curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
