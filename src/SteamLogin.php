@@ -156,7 +156,7 @@ class SteamLogin implements SteamLoginInterface
 	{
 		$this->timeout = isset($options['timeout']) ? ['timeout'] : 15;
 		$this->method = isset($options['method']) ? $options['method'] : 'xml';
-		if (self::$method == 'api') {
+		if ($this->method == 'api') {
 			if (empty($options['api_key'])) {
 				throw new Exception('Steam API key not given');
 			}
@@ -286,7 +286,7 @@ class SteamLogin implements SteamLoginInterface
 					$this->joined = !empty($info->joined) ? $info->joined : null;
 					break;
 				case 'api':
-					$info = json_decode(self::cURL(sprintf(self::STEAM_API, self::$api_key, $this->steamid)));
+					$info = json_decode(self::cURL(sprintf(self::STEAM_API, $this->api_key, $this->steamid)));
 					$info = $info->response->players[0];
 					switch ($info->personastate) {
 						case 0:
