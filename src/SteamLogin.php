@@ -135,7 +135,7 @@ class SteamLogin implements SteamLoginInterface
 	 * Validate Steam Login
 	 *
 	 * @throws Exception if steamid is null
-	 * @return int|null
+	 * @return boolean
 	 */
 	private function validate()
 	{
@@ -182,7 +182,12 @@ class SteamLogin implements SteamLoginInterface
 			$steamid = null;
 		}
 
-		return $steamid;
+		if (is_null($steamid)) {
+			throw new Exception('Steam Auth failed or timed out');
+		}
+
+		$this->convert($steamid);
+		return true;
 	}
 
 	/**

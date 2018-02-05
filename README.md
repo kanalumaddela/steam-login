@@ -21,33 +21,38 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 
 `SteamAuth::loginUrl($return)` - generates a login with an **optional** return url, if `$return` is not specified, it'll use the current request.
 
-`SteamAuth::validRequest()` - checks if the URL has the required parameters to validate the post steam login
-
 ---
 
 ### Validation
 
-`$player = new SteamAuth($options)` - SteamAuth instance
+`$player = $steamauth->player` - player details
 
-## Player Info
+## Docs
+
+`SteamLogin::button($type)` - returns the image url for the sign in through steam button  
+
+`small` - ![](https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_01.png)
+ 
+`large` - ![](https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_02.png)
 
 **Bolded** - XML method only  
 *Italicized* - API method only
 
 | var                      | description           | example |
-| :-------                 | :--------------       | ---: |
+| :---                     | :---                  | ---: |
 | $player->steamid         | 64 bit steamid        | 76561198152390718 |
+| $player->steamid2        | 32 bit steamid        | STEAM_0:0:96062495 |
+| $player->steamid3        | SteamID3              | [U:1:192124990] |
 | $player->name            | name                  | kanalumaddela |
 | $player->realName        | real name             | Sam |
 | $player->playerState     | status                | Online/Offline |
 | $player->stateMessage    | status message        | Online/Offline <br> **Last Online/In Game <game>** <br> *Busy/Away/Snooze/Looking to <trade/play>* |
-| $player->privacyState    | profile privacy       | Private **Friendsonly** |
+| $player->privacyState    | profile privacy       | Private <br> **Friendsonly** |
 | $player->visibilityState | visibility state      | <1/2/3> |
-| $player->avatarSmall     | small avatar          | avatar url <br> **cdn.akamai.steamstatic.com** (http) <br> *steamcdn-a.akamaihd.net* (https |
+| $player->avatarSmall     | small avatar          | avatar url <br> **cdn.akamai.steamstatic.com** (http) <br> *steamcdn-a.akamaihd.net* (https) |
 | $player->avatarMedium    | medium avatar         | ^ |
 | $player->avatarLarge     | large avatar          | ^ |
-| $player->joined          | date of joining steam | January 1st, 2018 (to be consisten with XML method) |player->joined | date of joining steam | January 1st, 2018 (format is consistent with XML method) |
-
+| $player->joined          | date of joining steam | January 1st, 2018 (format is consistent XML method) |
 ---
 
 ### Example
@@ -55,7 +60,7 @@ Be sure to add `use kanalumaddela\SteamAuth;` in your project.
 <?php
 
 session_start();
-require_once 'vendor/autoload.php';
+require_once __DIR__'/vendor/autoload.php';
 use kanalumaddela\SteamAuth\SteamAuth;
 
 echo '<a href="?login">login w steam</a><br><br>';
@@ -70,8 +75,11 @@ $options = [
 	'api_key' => 'hehe you wish'
 ];
 
-if (SteamAuth::validRequest()) {
-	$user = new SteamAuth($options); // validates and gets user's info
+// init instance
+$steamauth = new SteamAuth($options);
+
+if ($steamauth->validate()) {
+    $user = $steamauth->player;
 	if ($user->steamid) { // if steamid is null, validation failed
 		$_SESSION = (array)$user; // convert object to array to be saved into session
 	}
