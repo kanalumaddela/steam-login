@@ -1,7 +1,6 @@
 {
     "name": "kanalumaddela/steam-login",
     "description": "Steam Auth PHP library",
-    "version": "0.0.1",
     "keywords": ["steam", "auth"],
     "license": "MIT",
     "authors": [
