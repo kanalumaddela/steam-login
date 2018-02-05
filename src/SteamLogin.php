@@ -42,91 +42,14 @@ class SteamLogin implements SteamLoginInterface
 	const STEAM_PROFILE_ID = 'https://steamcommunity.com/id/%s';
 
 	/**
-	 * Player's SteamID (64-bit)
+	 * Player Object
 	 *
-	 * @var int
+	 * @var \stdClass
 	 */
-	public $steamid;
+	public $player;
 
 	/**
-	 * Player's name
-	 *
-	 * @var string
-	 */
-	public $name;
-
-	/**
-	 * Player's real name
-	 *
-	 * @var string
-	 */
-	public $realName;
-
-	/**
-	 * Player's status
-	 *
-	 * @var string
-	 */
-	public $playerState;
-
-	/**
-	 * Player's status message
-	 *
-	 * @var string
-	 */
-	public $stateMessage;
-
-	/**
-	 * Player's privacy state
-	 *
-	 * @var string
-	 */
-	public $privacyState;
-
-	/**
-	 * Player's visibility state
-	 *
-	 * @var int
-	 */
-	public $visibilityState;
-
-	/**
-	 * Player's small avatar
-	 *
-	 * @var string
-	 */
-	public $avatarSmall;
-
-	/**
-	 * Player's medium avatar
-	 *
-	 * @var string
-	 */
-	public $avatarMedium;
-
-	/**
-	 * Player's large avatar
-	 *
-	 * @var string
-	 */
-	public $avatarLarge;
-
-	/**
-	 * Player's profile URL
-	 *
-	 * @var string
-	 */
-	public $profileURL;
-
-	/**
-	 * Player's account of create
-	 *
-	 * @var string
-	 */
-	public $joined;
-
-	/**
-	 * Steam validation timeout
+	 * Timeout in seconds when validating steam login
 	 *
 	 * @var int
 	 */
@@ -154,6 +77,7 @@ class SteamLogin implements SteamLoginInterface
 	 */
 	public function __construct(array $options)
 	{
+		$this->player = new \stdClass();
 		$this->timeout = isset($options['timeout']) ? ['timeout'] : 15;
 		$this->method = isset($options['method']) ? $options['method'] : 'xml';
 		if ($this->method == 'api') {
@@ -253,7 +177,7 @@ class SteamLogin implements SteamLoginInterface
 			preg_match("#^http://steamcommunity.com/openid/id/([0-9]{17,25})#", $_GET['openid_claimed_id'], $matches);
 			$steamid = is_numeric($matches[1]) ? $matches[1] : 0;
 			$steamid = preg_match("#is_valid\s*:\s*true#i", $result) == 1 ? $steamid : null;
-			$this->steamid = $steamid;
+			$this->player->steamid = $steamid;
 		} catch (Exception $e) {
 			$steamid = null;
 		}
@@ -262,31 +186,50 @@ class SteamLogin implements SteamLoginInterface
 	}
 
 	/**
+	 * Convert a player's 64 bit steamid.
+	 *
+	 * @param $steamid
+	 */
+	public function convert($steamid)
+	{
+		// convert to SteamID
+		$authserver = bcsub($steamid, '76561197960265728') & 1;
+		$authid = (bcsub($steamid, '76561197960265728') - $authserver) / 2;
+		$this->player->steamid2 = "STEAM_0:$authserver:$authid";
+
+		// convert to SteamID3
+		$steamid2_split = explode(':', $this->player->steamid2);
+		$y = (int) $steamid2_split[1];
+		$z = (int) $steamid2_split[2];
+		$this->player->steamid3 = '[U:1:'.($z * 2 + $y).']';
+	}
+
+	/**
 	 * Get and set player's information via Steam profile XML or API
 	 */
 	private function userInfo()
 	{
-		if (!is_null($this->steamid)) {
+		if (!is_null($this->player->steamid)) {
 			switch ($this->method) {
 				case 'xml':
-					$info = simplexml_load_string(self::cURL(sprintf(self::STEAM_PROFILE.'/?xml=1', $this->steamid)),'SimpleXMLElement',LIBXML_NOCDATA);
+					$info = simplexml_load_string(self::cURL(sprintf(self::STEAM_PROFILE.'/?xml=1', $this->player->steamid)),'SimpleXMLElement',LIBXML_NOCDATA);
 					$info->customURL = (string)$info->customURL;
 					$info->joined = (string)$info->memberSince;
 
-					$this->name = (string)$info->steamID;
-					$this->realName = (string)$info->realname;
-					$this->playerState = ucfirst((string)$info->onlineState);
-					$this->stateMessage = (string)$info->stateMessage;
-					$this->privacyState = ucfirst((string)$info->privacyState);
-					$this->visibilityState = (int)$info->visibilityState;
-					$this->avatarSmall = (string)$info->avatarIcon;
-					$this->avatarMedium = (string)$info->avatarMedium;
-					$this->avatarLarge =(string) $info->avatarFull;
-					$this->profileURL = !empty((string)$info->customURL) ? sprintf(self::STEAM_PROFILE_ID, (string)$info->customURL) : sprintf(self::STEAM_PROFILE, $this->steamid);
-					$this->joined = !empty($info->joined) ? $info->joined : null;
+					$this->player->name = (string)$info->steamID;
+					$this->player->realName = (string)$info->realname;
+					$this->player->playerState = ucfirst((string)$info->onlineState);
+					$this->player->stateMessage = (string)$info->stateMessage;
+					$this->player->privacyState = ucfirst((string)$info->privacyState);
+					$this->player->visibilityState = (int)$info->visibilityState;
+					$this->player->avatarSmall = (string)$info->avatarIcon;
+					$this->player->avatarMedium = (string)$info->avatarMedium;
+					$this->player->avatarLarge =(string) $info->avatarFull;
+					$this->player->profileURL = !empty((string)$info->customURL) ? sprintf(self::STEAM_PROFILE_ID, (string)$info->customURL) : sprintf(self::STEAM_PROFILE, $this->player->steamid);
+					$this->player->joined = !empty($info->joined) ? $info->joined : null;
 					break;
 				case 'api':
-					$info = json_decode(self::cURL(sprintf(self::STEAM_API, $this->api_key, $this->steamid)));
+					$info = json_decode(self::cURL(sprintf(self::STEAM_API, $this->api_key, $this->player->steamid)));
 					$info = $info->response->players[0];
 					switch ($info->personastate) {
 						case 0:
@@ -311,17 +254,17 @@ class SteamLogin implements SteamLoginInterface
 							$info->personastate = 'Looking to play';
 							break;
 					}
-					$this->name = $info->personaname;
-					$this->realName =  isset($info->realname) ? $info->realname : null;
-					$this->playerState = $info->personastate != 0 ? 'Online' : 'Offline';
-					$this->stateMessage = $info->personastate;
-					$this->privacyState = ($info->communityvisibilitystate == 1 || $info->communityvisibilitystate == 2) ? 'Private' : 'Public';
-					$this->visibilityState = $info->communityvisibilitystate;
-					$this->avatarSmall = $info->avatar;
-					$this->avatarMedium = $info->avatarmedium;
-					$this->avatarLarge = $info->avatarfull;
-					$this->profileURL = str_replace('http://', 'https://', $info->profileurl);
-					$this->joined = isset($info->timecreated) ? date('F jS, Y', $info->timecreated) : null;
+					$this->player->name = $info->personaname;
+					$this->player->realName =  isset($info->realname) ? $info->realname : null;
+					$this->player->playerState = $info->personastate != 0 ? 'Online' : 'Offline';
+					$this->player->stateMessage = $info->personastate;
+					$this->player->privacyState = ($info->communityvisibilitystate == 1 || $info->communityvisibilitystate == 2) ? 'Private' : 'Public';
+					$this->player->visibilityState = $info->communityvisibilitystate;
+					$this->player->avatarSmall = $info->avatar;
+					$this->player->avatarMedium = $info->avatarmedium;
+					$this->player->avatarLarge = $info->avatarfull;
+					$this->player->profileURL = str_replace('http://', 'https://', $info->profileurl);
+					$this->player->joined = isset($info->timecreated) ? date('F jS, Y', $info->timecreated) : null;
 					break;
 				default:
 					break;
