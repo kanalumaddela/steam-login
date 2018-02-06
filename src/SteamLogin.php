@@ -114,13 +114,13 @@ class SteamLogin
 			if (!empty($options['session']['name'])) {
 				session_name( str_replace(' ', '_', trim($options['session']['name'])));
 			}
-			session_set_cookie_params(0, (!empty($options['session']['path']) ? $options['session']['path'] : str_replace(basename(__FILE__), '', $_SERVER['PHP_SELF'])), $_SERVER['SERVER_NAME'], isset($_SERVER["HTTPS"]), true);
+			session_set_cookie_params(0, (!empty($options['session']['path']) ? $options['session']['path'] : str_replace(basename($_SERVER['PHP_SELF']), '', $_SERVER['PHP_SELF'])), $_SERVER['SERVER_NAME'], isset($_SERVER["HTTPS"]), true);
 			session_start();
 		}
 
 		$this->site = new \stdClass();
 		$this->site->host = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://').$_SERVER['SERVER_NAME'];
-		$this->site->path = basename(__FILE__) != 'index.php' ? $_SERVER['PHP_SELF'] : parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+		$this->site->path = basename($_SERVER['PHP_SELF']) != 'index.php' ? $_SERVER['PHP_SELF'] : parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 		$this->site->home = $this->site->host.$this->site->path;
 
 		$this->loginURL = self::loginUrl();
@@ -172,7 +172,7 @@ class SteamLogin
 		}
 
 		$host = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://').$_SERVER['SERVER_NAME'];
-		$return = !empty($return) ? $return : $host.(basename(__FILE__) != 'index.php' ? $_SERVER['PHP_SELF'] : parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+		$return = !empty($return) ? $return : $host.(basename($_SERVER['PHP_SELF']) != 'index.php' ? $_SERVER['PHP_SELF'] : parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
 		$params = [
 			'openid.ns'         => self::OPENID_SPECS,
