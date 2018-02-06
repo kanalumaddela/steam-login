@@ -104,7 +104,7 @@ class SteamLogin
 	 * @param array $options
 	 * @throws RuntimeException
 	 */
-	public function __construct(array $options)
+	public function __construct(array $options = [])
 	{
 		if (isset($options['session'])) {
 			if (headers_sent() || session_status() != PHP_SESSION_NONE) {
