@@ -114,7 +114,7 @@ class SteamLogin
 			if (!empty($options['session']['name'])) {
 				session_name($options['session']['name']);
 			}
-			session_set_cookie_params(0, (!empty($options['session']['path']) ? $options['session']['path'] : '/'), $_SERVER['SERVER_NAME'], isset($_SERVER["HTTPS"]), true);
+			session_set_cookie_params(0, (!empty($options['session']['path']) ? $options['session']['path'] : str_replace(basename(__FILE__), '', $_SERVER['PHP_SELF'])), $_SERVER['SERVER_NAME'], isset($_SERVER["HTTPS"]), true);
 			session_start();
 		}
 
@@ -122,12 +122,13 @@ class SteamLogin
 		$this->site->host = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://').$_SERVER['SERVER_NAME'];
 		$this->site->path = basename(__FILE__) != 'index.php' ? $_SERVER['PHP_SELF'] : parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 		$this->site->home = $this->site->host.$this->site->path;
+
 		$this->loginURL = self::loginUrl();
 		$this->redirect_to = isset($_GET['openid_return_to']) ? $_GET['openid_return_to'] : $this->site->path;
 
-		$this->method = !empty($options['method']) ? $options['method'] : 'xml';
 		$this->player = new \stdClass();
 		$this->timeout = !empty($options['timeout']) ? $options['timeout'] : 15;
+		$this->method = !empty($options['method']) ? $options['method'] : 'xml';
 		if ($this->method == 'api') {
 			if (empty($options['api_key'])) {
 				throw new RuntimeException('Steam API key not given');
@@ -144,6 +145,7 @@ class SteamLogin
 	 */
 	public function login()
 	{
+		session_destroy();
 		return self::redirect($this->loginURL);
 	}
 
