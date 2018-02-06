@@ -57,6 +57,11 @@ class SteamLogin
 	public $player;
 
 	/**
+	 * Debug
+	 */
+	private $suppress = false;
+
+	/**
 	 * Site Info
 	 *
 	 * @var \stdClass
@@ -102,10 +107,11 @@ class SteamLogin
 	 * Construct SteamAuth instance
 	 *
 	 * @param array $options
-	 * @throws RuntimeException
+	 * @param bool $suppress
 	 */
-	public function __construct(array $options = [])
+	public function __construct(array $options = [], $suppress = false)
 	{
+		$this->suppress = $suppress;
 		if (isset($options['session'])) {
 			if (headers_sent() || session_status() != PHP_SESSION_NONE) {
 				throw new RuntimeException('Session already started or headers have already been sent');
@@ -247,7 +253,7 @@ class SteamLogin
 			$steamid = null;
 		}
 
-		if (is_null($steamid)) {
+		if (is_null($steamid) && !$this->suppress) {
 			throw new RuntimeException('Steam Auth failed or timed out');
 		}
 
