@@ -329,15 +329,16 @@ class SteamLogin
 	}
 
 	/**
-	 * Return the URL of Steam Login buttons.
+	 * Return the URL or <img> of Steam Login buttons.
 	 *
 	 * @param string $type
+	 * @param boolean $img
 	 *
 	 * @return string
 	 */
-	public static function button($type = 'small')
+	public static function button($type = 'small', $img = false)
 	{
-		return 'https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_0'.($type == 'small' ? 1 : 2).'.png';
+		return ($img == true ? '<img src="' : '').'https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_0'.($type == 'small' ? 1 : 2).'.png'.($img == true ? '" />' : '');
 	}
 
 	/**
