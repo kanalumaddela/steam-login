@@ -17,7 +17,7 @@ class SteamLogin
 	/**
 	 * OpenID Specs
 	 *
-	 * @var	string
+	 * @var string
 	 */
 	const OPENID_SPECS = 'http://specs.openid.net/auth/2.0';
 
@@ -64,6 +64,13 @@ class SteamLogin
 	private $redirect_to;
 
 	/**
+	 * Whether built in session management is enabled
+	 *
+	 * @var boolean
+	 */
+	private $session_enable = false;
+
+	/**
 	 * Timeout in seconds when validating steam login
 	 *
 	 * @var int
@@ -80,7 +87,7 @@ class SteamLogin
 	/**
 	 * Steam API key used to retrieve player's info
 	 *
-	 * @var	string
+	 * @var    string
 	 */
 	private $api_key;
 
@@ -93,10 +100,11 @@ class SteamLogin
 	public function __construct(array $options)
 	{
 		if (isset($options['session'])) {
-			if (headers_sent() || session_status() != PHP_SESSION_NONE ) {
+			if (headers_sent() || session_status() != PHP_SESSION_NONE) {
 				throw new RuntimeException('Session already started or headers have already been sent');
 			}
-			if (isset($options['session']['name'])) {
+			$this->session_enable = true;
+			if (!empty($options['session']['name'])) {
 				session_name($options['session']['name']);
 			}
 			session_set_cookie_params(0, (!empty($options['session']['path']) ? $options['session']['path'] : '/'), $_SERVER['SERVER_NAME'], isset($_SERVER["HTTPS"]), true);
@@ -106,9 +114,9 @@ class SteamLogin
 		$this->loginURL = self::loginUrl();
 		$this->redirect_to = isset($_GET['openid_return_to']) ? $_GET['openid_return_to'] : '/';
 
-		$this->method = isset($options['method']) ? $options['method'] : 'xml';
+		$this->method = !empty($options['method']) ? $options['method'] : 'xml';
 		$this->player = new \stdClass();
-		$this->timeout = isset($options['timeout']) ? $options['timeout'] : 15;
+		$this->timeout = !empty($options['timeout']) ? $options['timeout'] : 15;
 		if ($this->method == 'api') {
 			if (empty($options['api_key'])) {
 				throw new RuntimeException('Steam API key not given');
@@ -118,6 +126,16 @@ class SteamLogin
 		if (self::validRequest()) {
 			$this->validate();
 		}
+	}
+
+	/**
+	 * Logout user
+	 *
+	 */
+	public function logout()
+	{
+		session_destroy();
+		return self::redirect('/');
 	}
 
 	/**
@@ -216,6 +234,9 @@ class SteamLogin
 
 		$this->convert($steamid);
 		$this->userInfo();
+		if ($this->session_enable) {
+			return self::redirect($this->redirect_to);
+		}
 		return true;
 	}
 
@@ -302,9 +323,8 @@ class SteamLogin
 			default:
 				break;
 		}
-		if (isset($this->session_enable)) {
+		if ($this->session_enable) {
 			$_SESSION = $_SESSION + (array)$this->player;
-			self::redirect($this->redirect_to);
 		}
 	}
 
@@ -330,6 +350,8 @@ class SteamLogin
 
 	/**
 	 * Redirect user
+	 *
+	 * @param string $url
 	 */
 	private static function redirect($url) {
 		return header('Location: '.$url);
