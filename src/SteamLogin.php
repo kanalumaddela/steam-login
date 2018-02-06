@@ -57,6 +57,13 @@ class SteamLogin
 	public $player;
 
 	/**
+	 * Site Info
+	 *
+	 * @var \stdClass
+	 */
+	public $site;
+
+	/**
 	 * URL or path to redirect player to after successfully validating
 	 *
 	 * @var string
@@ -111,8 +118,12 @@ class SteamLogin
 			session_start();
 		}
 
+		$this->site = new \stdClass();
+		$this->site->host = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://').$_SERVER['SERVER_NAME'];
+		$this->site->path = basename(__FILE__) != 'index.php' ? $_SERVER['PHP_SELF'] : parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+		$this->site->home = $this->site->host.$this->site->path;
 		$this->loginURL = self::loginUrl();
-		$this->redirect_to = isset($_GET['openid_return_to']) ? $_GET['openid_return_to'] : '/';
+		$this->redirect_to = isset($_GET['openid_return_to']) ? $_GET['openid_return_to'] : $this->site->path;
 
 		$this->method = !empty($options['method']) ? $options['method'] : 'xml';
 		$this->player = new \stdClass();
@@ -129,13 +140,20 @@ class SteamLogin
 	}
 
 	/**
+	 * Redirect user to steam
+	 */
+	public function login()
+	{
+		return self::redirect($this->loginURL);
+	}
+
+	/**
 	 * Logout user
-	 *
 	 */
 	public function logout()
 	{
 		session_destroy();
-		return self::redirect('/');
+		return self::redirect($this->site->home);
 	}
 
 	/**
@@ -152,8 +170,7 @@ class SteamLogin
 		}
 
 		$host = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://').$_SERVER['SERVER_NAME'];
-
-		$return = $return ?? ($host.parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+		$return = !empty($return) ? $return : $host.(basename(__FILE__) != 'index.php' ? $_SERVER['PHP_SELF'] : parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
 		$params = [
 			'openid.ns'         => self::OPENID_SPECS,
