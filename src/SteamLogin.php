@@ -112,7 +112,7 @@ class SteamLogin
 			}
 			$this->session_enable = true;
 			if (!empty($options['session']['name'])) {
-				session_name($options['session']['name']);
+				session_name( str_replace(' ', '_', trim($options['session']['name'])));
 			}
 			session_set_cookie_params(0, (!empty($options['session']['path']) ? $options['session']['path'] : str_replace(basename(__FILE__), '', $_SERVER['PHP_SELF'])), $_SERVER['SERVER_NAME'], isset($_SERVER["HTTPS"]), true);
 			session_start();
