@@ -329,6 +329,18 @@ class SteamLogin
 	}
 
 	/**
+	 * Return the URL of Steam Login buttons.
+	 *
+	 * @param string $type
+	 *
+	 * @return string
+	 */
+	public static function button($type = 'small')
+	{
+		return 'https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_0'.($type == 'small' ? 1 : 2).'.png';
+	}
+
+	/**
 	 * Validate a URL
 	 *
 	 * @param string $url
@@ -353,7 +365,8 @@ class SteamLogin
 	 *
 	 * @param string $url
 	 */
-	private static function redirect($url) {
+	private static function redirect($url)
+	{
 		return header('Location: '.$url);
 	}
 
