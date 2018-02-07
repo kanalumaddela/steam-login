@@ -1,91 +1,100 @@
 # steam-login
 
-### Installation
-We use composer bois, but I'm too lazy to put this on Packagist
-```
-{
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/kanalumaddela/steam-login"
-        }
-    ],
-    "require": {
-        "kanalumaddela/steam-login": "dev-master"
-    }
-}
-```
-
-### Usage
-Be sure to add `use kanalumaddela\SteamAuth;` in your project.
-
-`SteamAuth::loginUrl($return)` - generates a login with an **optional** return url, if `$return` is not specified, it'll use the current request.
-
----
-
-### Validation
-
-`$player = $steamauth->player` - player details
-
-## Docs
-
-`SteamLogin::button($type)` - returns the image url for the sign in through steam button  
-
-`small` - ![](https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_01.png)
+All in one Steam Authentication library.
  
-`large` - ![](https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_02.png)
+ Features
+   - easy to use
+   - quickly get up and running without configuring anything
+   - can be used purely for validation or as all in one
+   - session management
+   - steamid conversions + steamid profile retrieval via 2 different methods
+ 
 
-**Bolded** - XML method only  
-*Italicized* - API method only
+```
+composer require kanalumaddela/steam-login
+```
+https://github.com/kanalumaddela/steam-login/wiki/Getting-Started
 
-| var                      | description           | example |
-| :---                     | :---                  | ---: |
-| $player->steamid         | 64 bit steamid        | 76561198152390718 |
-| $player->steamid2        | 32 bit steamid        | STEAM_0:0:96062495 |
-| $player->steamid3        | SteamID3              | [U:1:192124990] |
-| $player->name            | name                  | kanalumaddela |
-| $player->realName        | real name             | Sam |
-| $player->playerState     | status                | Online/Offline |
-| $player->stateMessage    | status message        | Online/Offline <br> **Last Online/In Game <game>** <br> *Busy/Away/Snooze/Looking to <trade/play>* |
-| $player->privacyState    | profile privacy       | Private <br> **Friendsonly** |
-| $player->visibilityState | visibility state      | <1/2/3> |
-| $player->avatarSmall     | small avatar          | avatar url <br> **cdn.akamai.steamstatic.com** (http) <br> *steamcdn-a.akamaihd.net* (https) |
-| $player->avatarMedium    | medium avatar         | ^ |
-| $player->avatarLarge     | large avatar          | ^ |
-| $player->joined          | date of joining steam | January 1st, 2018 (format is consistent XML method) |
 ---
 
-### Example
+### Example (quick run)
+
+*this example is not setting sessions or redirecting after validation, its purpose is to show users who want to handle that part themselves*
+
 ```php
 <?php
 
-session_start();
 require_once __DIR__.'/vendor/autoload.php';
 use kanalumaddela\SteamLogin\SteamLogin;
 
-echo '<a href="?login">login w steam</a><br><br>';
 
+// init instance
+$steamlogin = new SteamLogin();
+
+// redirect to steam
 if ($_SERVER['QUERY_STRING'] == 'login') {
-	header('Location: '.SteamLogin::loginUrl());
+    $steamlogin->login();
 }
 
+// logout
+if ($_SERVER['QUERY_STRING'] == 'logout') {
+    $steamlogin->logout();
+}
+
+if (SteamLogin::validRequest()) {
+    $player = $steamlogin->player;
+    echo '<pre>';
+    print_r($player);
+    echo '</pre>';
+} else {
+    echo '<a href="?login">'.SteamLogin::button('large', true).'</a>';
+}
+```
+
+---
+
+### Example (with sessions)
+
+*for sessions to be enabled, you must pass the `$options['sessions']` array, you don't have to fill everything in as the lib can do this for you*
+
+```php
+<?php
+
+require_once __DIR__.'/vendor/autoload.php';
+use kanalumaddela\SteamLogin\SteamLogin;
+
 $options = [
-	'timeout' => 30,
-	'method' => 'api',
-	'api_key' => 'hehe you wish'
+    'method' => 'xml',
+    'api_key' => '',
+    'timeout' => 15,
+    'session' => [
+        'name' => 'SteamLogin', // gets converted to snake case e.g. My Site -> My_Site
+        'lifetime' => 0,
+        'path' => str_replace(basename(__FILE__), '', $_SERVER['PHP_SELF']),
+        'secure' => isset($_SERVER["HTTPS"])
+    ],
 ];
 
 // init instance
 $steamlogin = new SteamLogin($options);
 
-if ($steamlogin::validRequest()) {
-	$user = $steamlogin->player;
-	if ($user->steamid) { // if steamid is null, validation failed
-		$_SESSION = (array)$user; // convert object to array to be saved into session
-	}
-	header('Location: '.$_GET['openid_return_to']); // redirect
+// redirect to steam
+if ($_SERVER['QUERY_STRING'] == 'login') {
+    $steamlogin->login();
 }
 
-echo '<pre>';
-var_dump($_SESSION);
+// logout
+if ($_SERVER['QUERY_STRING'] == 'logout') {
+    $steamlogin->logout();
+}
+
+// show login or user info
+if (!isset($_SESSION['steamid'])) {
+    echo '<a href="?login">'.SteamLogin::button('large', true).'</a>';
+} else {
+    echo '<a href="?logout">Logout</a>';
+    echo '<pre>';
+    print_r($_SESSION);
+    echo '</pre>';
+}
 ```

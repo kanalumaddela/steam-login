@@ -276,7 +276,7 @@ class SteamLogin
      *
      * @param $steamid
      */
-    public function convert($steamid)
+    private function convert($steamid)
     {
         // convert to SteamID
         $authserver = bcsub($steamid, '76561197960265728') & 1;
