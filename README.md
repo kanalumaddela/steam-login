@@ -9,6 +9,7 @@ All in one Steam Authentication library.
    - session management
    - steamid conversions + steamid profile retrieval via 2 different methods
  
+ ***Tested on PHP 7, haven't checked if it works on 5.6***
 
 ```
 composer require kanalumaddela/steam-login
