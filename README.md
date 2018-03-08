@@ -34,6 +34,7 @@ https://github.com/kanalumaddela/steam-login/wiki/Getting-Started
 <?php
 
 require_once __DIR__.'/vendor/autoload.php';
+
 use kanalumaddela\SteamLogin\SteamLogin;
 
 
@@ -51,7 +52,7 @@ if ($_SERVER['QUERY_STRING'] == 'logout') {
 }
 
 if (SteamLogin::validRequest()) {
-    $player = $steamlogin->player;
+    $player = $steamlogin->getPlayerInfo();
     echo '<pre>';
     print_r($player);
     echo '</pre>';
@@ -70,6 +71,7 @@ if (SteamLogin::validRequest()) {
 <?php
 
 require_once __DIR__.'/vendor/autoload.php';
+
 use kanalumaddela\SteamLogin\SteamLogin;
 
 $options = [
@@ -77,7 +79,7 @@ $options = [
     'api_key' => '',
     'timeout' => 15,
     'session' => [
-        'name' => 'SteamLogin', // gets converted to snake case e.g. My Site -> My_Site
+        'name' => 'My Site', // gets converted to snake case e.g. My Site -> My_Site
         'lifetime' => 0,
         'path' => str_replace(basename(__FILE__), '', $_SERVER['PHP_SELF']),
         'secure' => isset($_SERVER["HTTPS"])
