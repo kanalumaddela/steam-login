@@ -103,12 +103,13 @@ class SteamLogin
      */
     private $api_key;
 
-    /**
-     * Construct SteamAuth instance.
-     *
-     * @param array $options
-     * @param bool  $suppress
-     */
+	/**
+	 * Construct SteamAuth instance.
+	 *
+	 * @param array $options
+	 * @param bool $suppress
+	 * @throws Exception
+	 */
     public function __construct(array $options = [], $suppress = false)
     {
         $this->suppress = $suppress;
@@ -137,9 +138,13 @@ class SteamLogin
         $this->method = !empty($options['method']) ? $options['method'] : 'xml';
         if ($this->method == 'api') {
             if (empty($options['api_key'])) {
-                throw new RuntimeException('Steam API key not given');
+                if (!$this->suppress) {
+                    throw new Exception('Steam API key not given');
+                }
+                $this->method = 'xml';
+            } else {
+                $this->api_key = $options['api_key'];
             }
-            $this->api_key = $options['api_key'];
         }
         if (self::validRequest()) {
             $this->validate();
@@ -263,9 +268,9 @@ class SteamLogin
         }
 
         $this->convert($steamid);
-        $this->userInfo();
-        if ($this->session_enable) {
-            return self::redirect($this->redirect_to);
+	    if ($this->session_enable) {
+	        $this->userInfo();
+	        return self::redirect($this->redirect_to);
         }
 
         return true;
@@ -285,9 +290,7 @@ class SteamLogin
 
         // convert to SteamID3
         $steamid2_split = explode(':', $this->player->steamid2);
-        $y = (int) $steamid2_split[1];
-        $z = (int) $steamid2_split[2];
-        $this->player->steamid3 = '[U:1:'.($z * 2 + $y).']';
+        $this->player->steamid3 = '[U:1:'.((int)$steamid2_split[2] * 2 + (int)$steamid2_split[1]).']';
     }
 
     /**

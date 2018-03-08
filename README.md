@@ -1,5 +1,13 @@
 # steam-login
 
+[![Packagist](https://img.shields.io/packagist/dt/kanalumaddela/steam-login.svg?style=flat-square)](https://packagist.org/packages/kanalumaddela/steam-login)
+[![Packagist version](https://img.shields.io/packagist/v/kanalumaddela/steam-login.svg?style=flat-square)](https://packagist.org/packages/kanalumaddela/steam-login)
+[![PHP from Packagist](https://img.shields.io/packagist/php-v/kanalumaddela/steam-login.svg?style=flat-square)]()
+[![GitHub stars](https://img.shields.io/github/stars/kanalumaddela/steam-login.svg?style=flat-square)](https://github.com/kanalumaddela/steam-login/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/kanalumaddela/steam-login.svg?style=flat-square)](https://github.com/kanalumaddela/steam-login/network)
+[![GitHub issues](https://img.shields.io/github/issues/kanalumaddela/steam-login.svg?style=flat-square)](https://github.com/kanalumaddela/steam-login/issues)
+[![GitHub license](https://img.shields.io/github/license/kanalumaddela/steam-login.svg?style=flat-square)](https://github.com/kanalumaddela/steam-login/blob/master/LICENSE)
+
 All in one Steam Authentication library.
  
  Features
