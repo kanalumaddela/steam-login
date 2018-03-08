@@ -103,13 +103,14 @@ class SteamLogin
      */
     private $api_key;
 
-	/**
-	 * Construct SteamAuth instance.
-	 *
-	 * @param array $options
-	 * @param bool $suppress
-	 * @throws Exception
-	 */
+    /**
+     * Construct SteamAuth instance.
+     *
+     * @param array $options
+     * @param bool  $suppress
+     *
+     * @throws Exception
+     */
     public function __construct(array $options = [], $suppress = false)
     {
         $this->suppress = $suppress;
@@ -268,9 +269,10 @@ class SteamLogin
         }
 
         $this->convert($steamid);
-	    if ($this->session_enable) {
-	        $this->userInfo();
-	        return self::redirect($this->redirect_to);
+        if ($this->session_enable) {
+            $this->userInfo();
+
+            return self::redirect($this->redirect_to);
         }
 
         return true;
@@ -290,7 +292,7 @@ class SteamLogin
 
         // convert to SteamID3
         $steamid2_split = explode(':', $this->player->steamid2);
-        $this->player->steamid3 = '[U:1:'.((int)$steamid2_split[2] * 2 + (int)$steamid2_split[1]).']';
+        $this->player->steamid3 = '[U:1:'.((int) $steamid2_split[2] * 2 + (int) $steamid2_split[1]).']';
     }
 
     /**
