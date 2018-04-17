@@ -98,22 +98,22 @@ class SteamLogin
     ];
 
     /**
-     * Options
+     * Options.
      *
      * @var array
      */
     protected $options = [
-        'debug' => false,
-        'return' => '',
-        'method' => 'xml',
-        'api_key' => '',
-        'timeout' => 5,
+        'debug'          => false,
+        'return'         => '',
+        'method'         => 'xml',
+        'api_key'        => '',
+        'timeout'        => 5,
         'steam_universe' => false,
-        'session' => [
-            'enable' => true,
-            'name' => 'SteamLogin',
+        'session'        => [
+            'enable'   => true,
+            'name'     => 'SteamLogin',
             'lifetime' => 0,
-            'path' => '',
+            'path'     => '',
         ],
     ];
 
@@ -127,7 +127,6 @@ class SteamLogin
      */
     public function __construct(array $options = [], $suppress = false)
     {
-
         $this->site = new \stdClass();
         $this->site->secure = isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https' : isset($_SERVER['HTTPS']);
         $this->site->host = ($this->site->secure ? 'https://' : 'http://').$_SERVER['SERVER_NAME'];
@@ -184,9 +183,9 @@ class SteamLogin
     }
 
     /**
-     * Return login URL
+     * Return login URL.
      *
-     * @return  string
+     * @return string
      */
     public function getLoginURL()
     {
@@ -194,11 +193,13 @@ class SteamLogin
     }
 
     /**
-     * Convert a player's steamid and get their profile info
+     * Convert a player's steamid and get their profile info.
      *
-     * @param  boolean $info choose whether or not to retrieve their profile info
-     * @return \stdClass
+     * @param bool $info choose whether or not to retrieve their profile info
+     *
      * @throws Exception
+     *
+     * @return \stdClass
      */
     public function getPlayer($info = false)
     {
@@ -211,10 +212,11 @@ class SteamLogin
     }
 
     /**
-     * Alias function for getPlayer(true)
+     * Alias function for getPlayer(true).
+     *
+     * @throws Exception
      *
      * @return \stdClass
-     * @throws Exception
      */
     public function getPlayerInfo()
     {
@@ -255,9 +257,9 @@ class SteamLogin
      * Validate Steam Login.
      *
      * @throws RuntimeException if steamid is null
+     * @throws Exception
      *
      * @return bool
-     * @throws Exception
      */
     private function validate()
     {
@@ -334,6 +336,7 @@ class SteamLogin
 
     /**
      * Get and set player's information via Steam profile XML or API.
+     *
      * @throws Exception
      */
     private function userInfo()
@@ -387,7 +390,7 @@ class SteamLogin
         }
 
         if ($this->options['session']['enable']) {
-            $_SESSION = $_SESSION + [ 'SteamLogin' => (array) $this->player];
+            $_SESSION = $_SESSION + ['SteamLogin' => (array) $this->player];
         }
     }
 
