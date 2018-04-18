@@ -156,7 +156,7 @@ class SteamLogin
         $this->player = new \stdClass();
 
         if ($this->method == 'api') {
-            if (empty($this->options['api_key'])) {
+            if (empty($this->api_key)) {
                 if ($this->options['debug']) {
                     throw new Exception('Steam API key not given');
                 }
