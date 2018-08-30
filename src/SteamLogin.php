@@ -203,7 +203,7 @@ class SteamLogin
     }
 
     /**
-     * Return API method
+     * Return API method.
      *
      * @return string
      */
