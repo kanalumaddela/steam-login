@@ -203,6 +203,16 @@ class SteamLogin
     }
 
     /**
+     * Return API method
+     *
+     * @return string
+     */
+    public function getMethod()
+    {
+        return $this->options['method'];
+    }
+
+    /**
      * Convert a player's steamid and get their profile info.
      *
      * @param bool $info choose whether or not to retrieve their profile info
@@ -302,11 +312,11 @@ class SteamLogin
      */
     public static function userInfo($steamid, $method = 'xml', $debug = false)
     {
-        $info = new \stdClass();
-
         if ($steamid instanceof \stdClass) {
             $info = $steamid;
             $steamid = $steamid->steamid;
+        } else {
+            $info = self::convert($steamid);
         }
 
         switch ($method) {
