@@ -149,7 +149,7 @@ class SteamLogin
         $this->apiKey = $this->options['api_key'];
         unset($this->options['api_key']);
 
-        self::$apiURL = sprintf(self::STEAM_API, $this->options['api_key']);
+        self::$apiURL = sprintf(self::STEAM_API, $this->apiKey);
 
         if ($this->options['session']['enable']) {
             if (session_status() == PHP_SESSION_NONE && !$this->options['session']['existing']) {
@@ -189,7 +189,8 @@ class SteamLogin
      */
     public function setKey($key)
     {
-        self::$apiURL = sprintf(self::STEAM_API, $key);
+        $this->apiKey = $key;
+        self::$apiURL = sprintf(self::STEAM_API, $this->apiKey);
     }
 
     /**
