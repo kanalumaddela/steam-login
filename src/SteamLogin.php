@@ -178,7 +178,7 @@ class SteamLogin
                 throw new Exception('OpenID Error: '.$_GET['openid_error']);
             }
         }
-        
+
         $valid = $this->validate();
 
         if (!$valid) {
