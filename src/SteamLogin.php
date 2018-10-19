@@ -383,7 +383,13 @@ class SteamLogin
      */
     public static function validRequest()
     {
-        return !empty($_GET['openid_assoc_handle']) && !empty($_GET['openid_claimed_id']) && !empty($_GET['openid_sig']) && !empty($_GET['openid_signed']);
+        $valid = isset($_GET['openid_assoc_handle']) && isset($_GET['openid_claimed_id']) && isset($_GET['openid_sig']) && isset($_GET['openid_signed']);
+
+        if ($valid) {
+            $valid = !empty($_GET['openid_assoc_handle']) && !empty($_GET['openid_claimed_id']) && !empty($_GET['openid_sig']) && !empty($_GET['openid_signed']);
+        }
+
+        return $valid;
     }
 
     /**
