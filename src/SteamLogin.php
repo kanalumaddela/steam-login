@@ -135,7 +135,7 @@ class SteamLogin
     public function __construct(array $options = [])
     {
         $this->site = new \stdClass();
-        $this->site->secure = isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https' : ((isset($_SERVER['HTTPS']) ? $_SERVER['HTTPS'] !== 'off' : false) || $_SERVER['SERVER_PORT'] == 443);
+        $this->site->secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' : false );
         $this->site->host = ($this->site->secure ? 'https://' : 'http://').$_SERVER['SERVER_NAME'];
         $this->site->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $this->site->home = $this->site->host.(basename($_SERVER['PHP_SELF']) != 'index.php' ? $_SERVER['PHP_SELF'] : $this->site->path);
