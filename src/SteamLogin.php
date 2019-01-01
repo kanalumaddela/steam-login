@@ -528,7 +528,7 @@ class SteamLogin
             'openid.ns'         => self::OPENID_SPECS,
             'openid.mode'       => 'checkid_setup',
             'openid.return_to'  => $return,
-            'openid.realm'      => $this->site->host,
+            'openid.realm'      => $this->site->host.($this->site->port !== 80 ? ':'.$this->site->port : ''),
             'openid.identity'   => self::OPENID_SPECS.'/identifier_select',
             'openid.claimed_id' => self::OPENID_SPECS.'/identifier_select',
         ];
