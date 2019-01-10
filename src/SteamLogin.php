@@ -173,7 +173,7 @@ class SteamLogin
                 $this->method = 'xml';
             }
         }
-        
+
         if (isset($_GET['openid_error'])) {
             throw new Exception('OpenID Error: '.$_GET['openid_error']);
         }
