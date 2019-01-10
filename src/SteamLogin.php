@@ -173,6 +173,10 @@ class SteamLogin
                 $this->method = 'xml';
             }
         }
+        
+        if (isset($_GET['openid_error'])) {
+            throw new Exception('OpenID Error: '.$_GET['openid_error']);
+        }
 
         if (self::validRequest()) {
             $valid = $this->validate();
@@ -180,10 +184,6 @@ class SteamLogin
             if (!$valid) {
                 throw new Exception('Steam login failed, try again');
             }
-        }
-
-        if (isset($_GET['openid_error'])) {
-            throw new Exception('OpenID Error: '.$_GET['openid_error']);
         }
     }
 
