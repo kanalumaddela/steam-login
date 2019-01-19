@@ -139,7 +139,7 @@ class SteamLogin
         $this->site->host = ($this->site->secure ? 'https://' : 'http://').$_SERVER['HTTP_HOST'];
         $this->site->port = (int) $_SERVER['SERVER_PORT'];
         $this->site->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $this->site->home = $this->site->host.($this->site->port !== 80 ? ':'.$this->site->port : '').(basename($_SERVER['PHP_SELF']) != 'index.php' ? $_SERVER['PHP_SELF'] : $this->site->path);
+        $this->site->home = $this->site->host.(basename($_SERVER['PHP_SELF']) != 'index.php' ? $_SERVER['PHP_SELF'] : $this->site->path);
 
         $this->options['return'] = $this->site->home;
         $this->options['session']['path'] = $this->site->path;
