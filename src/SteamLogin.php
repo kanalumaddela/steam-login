@@ -135,11 +135,11 @@ class SteamLogin
     public function __construct(array $options = [])
     {
         $this->site = new \stdClass();
-        $this->site->secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $_SERVER['SERVER_PORT'] == 443 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' : false);
-        $this->site->host = ($this->site->secure ? 'https://' : 'http://').$_SERVER['HTTP_HOST'];
         $this->site->port = (int) $_SERVER['SERVER_PORT'];
+        $this->site->secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $this->site->port === 443 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' : false);
+        $this->site->host = ($this->site->secure ? 'https://' : 'http://').strstr($_SERVER['HTTP_HOST'], ':', true);
         $this->site->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $this->site->home = $this->site->host.($this->site->port !== 80 ? ':'.$this->site->port : '').(basename($_SERVER['PHP_SELF']) != 'index.php' ? $_SERVER['PHP_SELF'] : $this->site->path);
+        $this->site->home = $this->site->host.($this->site->port !== 80 && !$this->site->secure ? ':'.$this->site->port : '').(basename($_SERVER['PHP_SELF']) != 'index.php' ? $_SERVER['PHP_SELF'] : $this->site->path);
 
         $this->options['return'] = $this->site->home;
         $this->options['session']['path'] = $this->site->path;
