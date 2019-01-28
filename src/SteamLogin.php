@@ -134,6 +134,10 @@ class SteamLogin
      */
     public function __construct(array $options = [])
     {
+        if (isset($_GET['openid_error'])) {
+            throw new Exception('OpenID Error: '.$_GET['openid_error']);
+        }
+
         $this->site = new \stdClass();
         $this->site->port = (int) $_SERVER['SERVER_PORT'];
         $this->site->secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $this->site->port === 443 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' : false);
@@ -174,20 +178,12 @@ class SteamLogin
             }
         }
 
-        if (isset($_GET['openid_error'])) {
-            throw new Exception('OpenID Error: '.$_GET['openid_error']);
-        }
-
         if (self::validRequest()) {
             $valid = $this->validate();
 
             if (!$valid) {
                 throw new Exception('Steam login failed, try again');
             }
-        }
-
-        if (isset($_GET['openid_error'])) {
-            throw new Exception('OpenID Error: '.$_GET['openid_error']);
         }
     }
 
