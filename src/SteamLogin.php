@@ -122,6 +122,7 @@ class SteamLogin
             'lifetime' => 0,
             'path'     => '',
             'existing' => false,
+            'http_only' => true,
         ],
     ];
 
@@ -164,7 +165,7 @@ class SteamLogin
 
         if ($this->options['session']['enable']) {
             if (session_status() == PHP_SESSION_NONE && !$this->options['session']['existing']) {
-                session_set_cookie_params($this->options['session']['lifetime'], $this->options['session']['path'], $this->site->domain, $this->site->secure, true);
+                session_set_cookie_params($this->options['session']['lifetime'], $this->options['session']['path'], $this->site->domain, $this->site->secure, $this->options['session']['http_only']);
                 session_name($this->options['session']['name']);
                 session_start();
             }
