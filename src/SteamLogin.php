@@ -135,21 +135,21 @@ class SteamLogin
     public function __construct(array $options = [])
     {
         if (isset($_GET['openid_error'])) {
-            throw new Exception('OpenID Error: ' . $_GET['openid_error']);
+            throw new Exception('OpenID Error: '.$_GET['openid_error']);
         }
 
         $this->site = new \stdClass();
-        $this->site->port = (int)$_SERVER['SERVER_PORT'];
+        $this->site->port = (int) $_SERVER['SERVER_PORT'];
         $this->site->secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $this->site->port === 443 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' : false);
 
         $tmp_host = strstr($_SERVER['HTTP_HOST'], ':', true);
-        $this->site->host = ($this->site->secure ? 'https://' : 'http://') . ($tmp_host ? $tmp_host : $_SERVER['HTTP_HOST']);
+        $this->site->host = ($this->site->secure ? 'https://' : 'http://').($tmp_host ? $tmp_host : $_SERVER['HTTP_HOST']);
 
         preg_match('/^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n?]+)/', $this->site->host, $matches);
         $this->site->domain = $matches[1];
 
         $this->site->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $this->site->home = $this->site->host . ($this->site->port !== 80 && !$this->site->secure ? ':' . $this->site->port : '') . (basename($_SERVER['SCRIPT_NAME']) != 'index.php' ? $_SERVER['SCRIPT_NAME'] : $this->site->path);
+        $this->site->home = $this->site->host.($this->site->port !== 80 && !$this->site->secure ? ':'.$this->site->port : '').(basename($_SERVER['SCRIPT_NAME']) != 'index.php' ? $_SERVER['SCRIPT_NAME'] : $this->site->path);
 
         $this->options['return'] = $this->site->home;
         $this->options['session']['path'] = $this->site->path;
@@ -238,7 +238,7 @@ class SteamLogin
     {
         $this->player = self::convert($this->player->steamid, $this->options['steam_universe']);
         if ($info) {
-            $this->player = (object)array_merge((array)$this->player, (array)self::userInfo($this->player->steamid, $this->method));
+            $this->player = (object) array_merge((array) $this->player, (array) self::userInfo($this->player->steamid, $this->method));
         }
 
         return $this->player;
@@ -280,13 +280,13 @@ class SteamLogin
      * Return the URL or <img> of Steam Login buttons.
      *
      * @param string $type
-     * @param bool $img
+     * @param bool   $img
      *
      * @return string
      */
     public static function button($type = 'small', $img = false)
     {
-        return ($img == true ? '<img src="' : '') . 'https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_0' . ($type == 'small' ? 1 : 2) . '.png' . ($img == true ? '" />' : '');
+        return ($img == true ? '<img src="' : '').'https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_0'.($type == 'small' ? 1 : 2).'.png'.($img == true ? '" />' : '');
     }
 
     /**
@@ -307,7 +307,7 @@ class SteamLogin
         $z = ($steamid >> 1) & 0x7FFFFFF;
 
         $object->steamid2 = "STEAM_$x:$y:$z";
-        $object->steamid3 = '[U:1:' . ($z * 2 + $y) . ']';
+        $object->steamid3 = '[U:1:'.($z * 2 + $y).']';
 
         return $object;
     }
@@ -317,7 +317,7 @@ class SteamLogin
      *
      * @param $steamid
      * @param string $method
-     * @param bool $debug
+     * @param bool   $debug
      *
      * @throws Exception
      *
@@ -338,7 +338,7 @@ class SteamLogin
                 $data = json_decode($response);
                 $data = isset($data->response->players[0]) ? $data->response->players[0] : [];
 
-                $length = count((array)$data);
+                $length = count((array) $data);
 
                 if ($length > 0) {
                     $info->name = $data->personaname;
@@ -353,27 +353,27 @@ class SteamLogin
                     $info->joined = isset($data->timecreated) ? $data->timecreated : null;
                 } else {
                     if ($debug) {
-                        throw new Exception('No valid API data please look into the response: ' . $response);
+                        throw new Exception('No valid API data please look into the response: '.$response);
                     }
                 }
                 break;
             case 'xml':
-                $data = simplexml_load_string(self::curl(sprintf(self::STEAM_PROFILE . '/?xml=1', $steamid)), 'SimpleXMLElement', LIBXML_NOCDATA);
+                $data = simplexml_load_string(self::curl(sprintf(self::STEAM_PROFILE.'/?xml=1', $steamid)), 'SimpleXMLElement', LIBXML_NOCDATA);
 
                 if ($data !== false && !isset($data->error)) {
-                    $info->name = (string)$data->steamID;
+                    $info->name = (string) $data->steamID;
                     $info->realName = !empty($data->realName) ? $data->realName : null;
                     $info->playerState = ucfirst($data->onlineState);
                     $info->privacyState = ($data->privacyState == 'friendsonly' || $data->privacyState == 'private') ? 'Private' : 'Public';
-                    $info->stateMessage = (string)$data->stateMessage;
-                    $info->visibilityState = (int)$data->visibilityState;
-                    $info->avatarSmall = (string)$data->avatarIcon;
-                    $info->avatarMedium = (string)$data->avatarMedium;
-                    $info->avatarLarge = (string)$data->avatarFull;
+                    $info->stateMessage = (string) $data->stateMessage;
+                    $info->visibilityState = (int) $data->visibilityState;
+                    $info->avatarSmall = (string) $data->avatarIcon;
+                    $info->avatarMedium = (string) $data->avatarMedium;
+                    $info->avatarLarge = (string) $data->avatarFull;
                     $info->joined = isset($data->memberSince) ? strtotime($data->memberSince) : null;
                 } else {
                     if ($debug) {
-                        throw new Exception('No XML data please look into this: ' . (isset($data['error']) ? $data['error'] : ''));
+                        throw new Exception('No XML data please look into this: '.(isset($data['error']) ? $data['error'] : ''));
                     }
                 }
                 break;
@@ -421,8 +421,8 @@ class SteamLogin
             $signed = explode(',', $_GET['openid_signed']);
 
             foreach ($signed as $item) {
-                $value = $_GET['openid_' . str_replace('.', '_', $item)];
-                $params['openid.' . $item] = get_magic_quotes_gpc() ? stripslashes($value) : $value;
+                $value = $_GET['openid_'.str_replace('.', '_', $item)];
+                $params['openid.'.$item] = get_magic_quotes_gpc() ? stripslashes($value) : $value;
             }
 
             $params['openid.mode'] = 'check_authentication';
@@ -434,11 +434,11 @@ class SteamLogin
             curl_setopt($curl, CURLOPT_POST, 1);
             curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($curl, CURLOPT_TIMEOUT, (int)$this->options['timeout']);
+            curl_setopt($curl, CURLOPT_TIMEOUT, (int) $this->options['timeout']);
             curl_setopt($curl, CURLOPT_HTTPHEADER, [
                 'Accept-language: en',
                 'Content-type: application/x-www-form-urlencoded',
-                'Content-Length: ' . strlen($data),
+                'Content-Length: '.strlen($data),
             ]);
 
             $result = curl_exec($curl);
@@ -463,9 +463,9 @@ class SteamLogin
         }
 
         if ($this->options['session']['enable']) {
-            $this->player = (object)array_merge((array)self::convert($steamid, $this->options['steam_universe']), (array)self::userInfo($steamid, $this->method));
+            $this->player = (object) array_merge((array) self::convert($steamid, $this->options['steam_universe']), (array) self::userInfo($steamid, $this->method));
 
-            $_SESSION = $_SESSION + ['SteamLogin' => (array)$this->player];
+            $_SESSION = $_SESSION + ['SteamLogin' => (array) $this->player];
 
             return self::redirect($this->redirect_to);
         }
@@ -492,7 +492,7 @@ class SteamLogin
      */
     private static function redirect($url)
     {
-        return header('Location: ' . $url);
+        return header('Location: '.$url);
     }
 
     /**
@@ -536,10 +536,10 @@ class SteamLogin
             'openid.mode'       => 'checkid_setup',
             'openid.return_to'  => $return,
             'openid.realm'      => $this->site->host,
-            'openid.identity'   => self::OPENID_SPECS . '/identifier_select',
-            'openid.claimed_id' => self::OPENID_SPECS . '/identifier_select',
+            'openid.identity'   => self::OPENID_SPECS.'/identifier_select',
+            'openid.claimed_id' => self::OPENID_SPECS.'/identifier_select',
         ];
 
-        return self::OPENID_STEAM . '?' . http_build_query($params);
+        return self::OPENID_STEAM.'?'.http_build_query($params);
     }
 }
