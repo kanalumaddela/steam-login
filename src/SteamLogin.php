@@ -117,11 +117,11 @@ class SteamLogin
         'timeout'        => 5,
         'steam_universe' => false,
         'session'        => [
-            'enable'   => true,
-            'name'     => 'SteamLogin',
-            'lifetime' => 0,
-            'path'     => '',
-            'existing' => false,
+            'enable'    => true,
+            'name'      => 'SteamLogin',
+            'lifetime'  => 0,
+            'path'      => '',
+            'existing'  => false,
             'http_only' => true,
         ],
     ];
