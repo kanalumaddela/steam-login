@@ -143,14 +143,10 @@ class SteamLogin
         $this->site->port = (int) $_SERVER['SERVER_PORT'];
         $this->site->secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $this->site->port === 443 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) ? $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https' : false);
 
-        $tmp_host = strstr($_SERVER['HTTP_HOST'], ':', true);
-        $this->site->host = ($this->site->secure ? 'https://' : 'http://').($tmp_host ? $tmp_host : $_SERVER['HTTP_HOST']);
-
-        preg_match('/^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:\/\n?]+)/', $this->site->host, $matches);
-        $this->site->domain = $matches[1];
+        $this->site->domain = strtok($_SERVER['HTTP_HOST'], ':');
 
         $this->site->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $this->site->home = $this->site->host.($this->site->port !== 80 && !$this->site->secure ? ':'.$this->site->port : '').(basename($_SERVER['SCRIPT_NAME']) != 'index.php' ? $_SERVER['SCRIPT_NAME'] : $this->site->path);
+        $this->site->home = ($this->site->secure ? 'https://' : 'http://').$this->site->domain.($this->site->port !== 80 && !$this->site->secure ? ':'.$this->site->port : '').(basename($_SERVER['SCRIPT_NAME']) != 'index.php' ? $_SERVER['SCRIPT_NAME'] : $this->site->path);
 
         $this->options['return'] = $this->site->home;
         $this->options['session']['path'] = $this->site->path;
@@ -536,7 +532,7 @@ class SteamLogin
             'openid.ns'         => self::OPENID_SPECS,
             'openid.mode'       => 'checkid_setup',
             'openid.return_to'  => $return,
-            'openid.realm'      => $this->site->host,
+            'openid.realm'      => $this->site->domain,
             'openid.identity'   => self::OPENID_SPECS.'/identifier_select',
             'openid.claimed_id' => self::OPENID_SPECS.'/identifier_select',
         ];
