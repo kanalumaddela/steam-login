@@ -127,7 +127,7 @@ class SteamLogin
     ];
 
     /**
-     * Steam Login respond from OpenID
+     * Steam Login respond from OpenID.
      *
      * @var mixed
      */
