@@ -453,7 +453,7 @@ class SteamLogin
             $steamid = preg_match("#is_valid\s*:\s*true#i", $result) == 1 ? $steamid : null;
 
             if (!$steamid) {
-                throw new Exception('Validation failed, try again');
+                throw new Exception('Validation failed, try again. Response: '.$this->loginResponse);
             }
 
             $this->player->steamid = $steamid;
