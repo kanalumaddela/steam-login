@@ -127,6 +127,13 @@ class SteamLogin
     ];
 
     /**
+     * Steam Login respond from OpenID
+     *
+     * @var mixed
+     */
+    protected $loginResponse;
+
+    /**
      * Construct SteamAuth instance.
      *
      * @param array $options
@@ -438,7 +445,7 @@ class SteamLogin
                 'Content-Length: '.strlen($data),
             ]);
 
-            $result = curl_exec($curl);
+            $this->loginResponse = $result = curl_exec($curl);
             curl_close($curl);
 
             preg_match('#^https?://steamcommunity.com/openid/id/([0-9]{17,25})#', $_GET['openid_claimed_id'], $matches);
