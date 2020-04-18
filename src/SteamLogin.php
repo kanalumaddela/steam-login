@@ -2,9 +2,6 @@
 
 namespace kanalumaddela\SteamLogin;
 
-use Exception;
-use RuntimeException;
-use stdClass;
 use function array_merge;
 use function array_replace_recursive;
 use function basename;
@@ -13,6 +10,7 @@ use function curl_close;
 use function curl_exec;
 use function curl_init;
 use function curl_setopt;
+use Exception;
 use function explode;
 use function filter_var;
 use function get_magic_quotes_gpc;
@@ -23,11 +21,13 @@ use function is_numeric;
 use function json_decode;
 use function parse_url;
 use function preg_match;
+use RuntimeException;
 use function session_name;
 use function session_set_cookie_params;
 use function session_start;
 use function session_status;
 use function sprintf;
+use stdClass;
 use function str_replace;
 use function stripslashes;
 use function strlen;
