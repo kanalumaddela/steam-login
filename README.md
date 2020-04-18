@@ -8,7 +8,8 @@
 [![GitHub issues](https://img.shields.io/github/issues/kanalumaddela/steam-login.svg?style=flat-square)](https://github.com/kanalumaddela/steam-login/issues)
 [![GitHub license](https://img.shields.io/github/license/kanalumaddela/steam-login.svg?style=flat-square)](https://github.com/kanalumaddela/steam-login/blob/master/LICENSE)
 
-All in one Steam Authentication library. Laravel? See [laravel-steam-login](https://github.com/kanalumaddela/laravel-steam-login)
+All in one Steam Authentication library.  
+Do you use Laravel? See [laravel-steam-login](https://github.com/kanalumaddela/laravel-steam-login)
  
  Features
    - easy to use
