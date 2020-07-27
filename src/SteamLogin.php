@@ -400,6 +400,7 @@ class SteamLogin
                     $info->avatarMedium = $data->avatarmedium;
                     $info->avatarLarge = $data->avatarfull;
                     $info->joined = isset($data->timecreated) ? $data->timecreated : null;
+                    $info->profileUrl = $data->profileurl;
                 } else {
                     if ($debug) {
                         throw new Exception('No valid API data please look into the response: '.$response);
@@ -420,6 +421,7 @@ class SteamLogin
                     $info->avatarMedium = (string) $data->avatarMedium;
                     $info->avatarLarge = (string) $data->avatarFull;
                     $info->joined = isset($data->memberSince) ? strtotime($data->memberSince) : null;
+                    $info->profileUrl = $data->customURL ?? 'https://steamcommunity.com/profiles/'.$steamid;
                 } else {
                     if ($debug) {
                         throw new Exception('No XML data please look into this: '.(isset($data['error']) ? $data['error'] : ''));
