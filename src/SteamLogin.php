@@ -421,7 +421,7 @@ class SteamLogin
                     $info->avatarMedium = (string) $data->avatarMedium;
                     $info->avatarLarge = (string) $data->avatarFull;
                     $info->joined = isset($data->memberSince) ? strtotime($data->memberSince) : null;
-                    $info->profileUrl = $data->customURL ?? 'https://steamcommunity.com/profiles/'.$steamid;
+                    $info->profileUrl = (string) $data->customURL ?? 'https://steamcommunity.com/profiles/'.$steamid;
                 } else {
                     if ($debug) {
                         throw new Exception('No XML data please look into this: '.(isset($data['error']) ? $data['error'] : ''));
