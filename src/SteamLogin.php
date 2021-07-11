@@ -391,10 +391,10 @@ class SteamLogin
 
                 try {
                     $data = json_decode($response, false, 512, JSON_THROW_ON_ERROR);
-                    $data = $data->response->players[0] ?? new stdClass;
+                    $data = $data->response->players[0] ?? new stdClass();
 
                     if (count((array) $data) === 0) {
-                        throw new Exception;
+                        throw new Exception();
                     }
                 } catch (Exception $e) {
                     if ($debug) {
@@ -402,7 +402,7 @@ class SteamLogin
                     }
                 } finally {
                     if (!isset($data)) {
-                        $data = new stdClass;
+                        $data = new stdClass();
                     }
                 }
 
@@ -472,7 +472,7 @@ class SteamLogin
     protected static function redirect(string $url): void
     {
         header('Location: '.$url);
-        die();
+        exit();
     }
 
     /**
