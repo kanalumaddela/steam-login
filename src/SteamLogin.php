@@ -2,35 +2,34 @@
 
 namespace kanalumaddela\SteamLogin;
 
+use Exception;
+use InvalidArgumentException;
+use JetBrains\PhpStorm\NoReturn;
+use JsonException;
+use RuntimeException;
+use SimpleXMLElement;
 use function array_merge;
 use function array_replace_recursive;
-use function basename;
-use function count;
 use function curl_close;
 use function curl_exec;
 use function curl_init;
 use function curl_setopt;
-use Exception;
 use function explode;
 use function filter_var;
 use function header;
 use function http_build_query;
-use function is_null;
+use function in_array;
 use function is_numeric;
-use function json_decode;
 use function parse_url;
 use function preg_match;
-use RuntimeException;
-use function session_name;
-use function session_set_cookie_params;
 use function session_start;
 use function session_status;
+use function simplexml_load_string;
 use function sprintf;
-use stdClass;
 use function str_replace;
 use function strlen;
 use function strtok;
-use function strtotime;
+use function substr;
 
 class SteamLogin
 {
@@ -53,7 +52,7 @@ class SteamLogin
      *
      * @var string
      */
-    public const STEAM_API = 'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s';
+    public const STEAM_API_PLAYER_SUMMARY = 'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s';
 
     /**
      * Steam Profile URL using 64 bit steamid.
@@ -61,13 +60,6 @@ class SteamLogin
      * @var string
      */
     public const STEAM_PROFILE = 'https://steamcommunity.com/profiles/%s';
-
-    /**
-     * API URL with key filled in.
-     *
-     * @var string
-     */
-    protected string $apiURL = '';
 
     /**
      * personastates.
@@ -83,210 +75,577 @@ class SteamLogin
     ];
 
     /**
-     * Site Info.
-     *
-     * @var \stdClass
-     */
-    public stdClass $site;
-
-    /**
-     * Steam API key.
-     *
-     * @var string|null
-     */
-    protected ?string $apiKey;
-
-    /**
-     * Login URL.
-     *
-     * @var string
-     */
-    protected string $loginURL;
-
-    /**
-     * Player Object.
-     *
-     * @var \stdClass
-     */
-    protected stdClass $player;
-
-    /**
-     * URL or path to redirect player to after successfully validating.
-     *
-     * @var string
-     */
-    protected string $redirect_to;
-
-    /**
-     * Method of retrieving player's info.
-     *
-     * @var string
-     */
-    protected string $method;
-
-    /**
      * Options.
+     *
+     * debug: enable debug mode and throw more exceptions
+     * method: api method for retrieving player info
      *
      * @var array
      */
     protected array $options = [
-        'debug'          => false,
-        'return'         => '',
-        'method'         => 'xml',
-        'api_key'        => null,
-        'timeout'        => 5,
+        'debug' => false,
+        'method' => 'xml',
+        'api_key' => null,
+        'timeout' => 5,
         'steam_universe' => false,
-        'session'        => [
-            'enable'    => true,
-            'name'      => 'SteamLogin',
-            'lifetime'  => 0,
-            'path'      => '',
-            'existing'  => false,
-            'http_only' => true,
+        'retrieve_info' => false,
+        'automatic_validation' => true,
+        'automatic_redirect' => true,
+        'session' => [
+            'enable' => true,
+            'key' => 'SteamLogin',
         ],
     ];
 
     /**
-     * Steam Login respond from OpenID.
+     * openid.return_to
+     *
+     * @var string
+     */
+    protected string $returnTo;
+
+    /**
+     * OpenID response.
      *
      * @var mixed
      */
-    protected $loginResponse;
+    protected mixed $openIdResponse;
 
     /**
-     * Construct SteamAuth instance.
+     * Steam API key.
      *
-     * @param array $options
-     *
-     * @throws Exception
+     * @var string
      */
+    protected string $apiKey;
+
+    /**
+     * Response from either Steam API / XML profile data.
+     *
+     * @var mixed
+     */
+    protected mixed $apiResponse;
+
+    /**
+     * Steam user.
+     *
+     * @var array
+     */
+    protected array $player = [];
+
+    protected array $site = [];
+
+    /**
+     * OpenID login URL.
+     *
+     * @var string
+     */
+    protected string $loginUrl;
+
+    /**
+     * URL to redirect to after logging in.
+     *
+     * @var string
+     */
+    protected string $redirectTo;
+
     public function __construct(array $options = [])
     {
         if (isset($_GET['openid_error'])) {
-            throw new Exception('OpenID Error: '.$_GET['openid_error']);
+            throw new RuntimeException('OpenID Error: ' . $_GET['openid_error']);
         }
 
-        $this->site = new stdClass();
-        $this->site->port = $_SERVER['SERVER_PORT'];
-        $this->site->secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $this->site->port === 443 || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
-
-        $this->site->domain = strtok($_SERVER['HTTP_HOST'], ':');
-
-        $this->site->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-        $this->site->home = ($this->site->secure ? 'https://' : 'http://').$this->site->domain.($this->site->port !== 80 && !$this->site->secure ? ':'.$this->site->port : '').(basename($_SERVER['SCRIPT_NAME']) !== 'index.php' ? $_SERVER['SCRIPT_NAME'] : $this->site->path);
-
-        $this->options['return'] = $this->site->home;
-        $this->options['session']['path'] = $this->site->path;
+        if (empty($options['allowed_hosts'])) {
+            throw new InvalidArgumentException('options.allowed_hosts is empty / not defined');
+        }
 
         $this->options = array_replace_recursive($this->options, $options);
 
-        $this->method = $this->options['method'];
-        $this->apiKey = $this->options['api_key'];
-        unset($this->options['api_key']);
+        $this->setupSite($this->options['site'] ?? []);
+        $this->setupApi();
+        $this->setupReturnRedirect();
+        $this->buildLoginUrl();
 
-        $this->apiURL = sprintf(self::STEAM_API, $this->apiKey);
+        unset($this->options['api_key'], $this->options['site']);
 
-        if ($this->options['session']['enable'] && !$this->options['session']['existing'] && session_status() === PHP_SESSION_NONE) {
-            session_set_cookie_params($this->options['session']['lifetime'], $this->options['session']['path'], $this->site->domain, $this->site->secure, $this->options['session']['http_only']);
-            session_name($this->options['session']['name']);
+        if ($this->options['session']['enable'] && session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
-        $this->loginURL = $this->createLoginURL($this->options['return']);
-
-        $this->redirect_to = $_GET['openid_return_to'] ?? $this->options['return'];
-
-        $this->player = new stdClass();
-
-        if (($this->method === 'api') && empty($this->apiKey)) {
-            if ($this->options['debug']) {
-                throw new Exception('Steam API key not given');
-            }
-            $this->method = 'xml';
-        }
-
-        if (self::validRequest()) {
+        if ($this->options['automatic_validation'] && static::isValidOpenIdRequest()) {
             $valid = $this->validate();
 
             if (!$valid) {
-                throw new Exception('Steam login failed, try again');
+                throw new RuntimeException('Steam login failed, please try again');
+            }
+
+            if ($this->options['retrieve_info']) {
+                $this->player = array_merge($this->player, $this->userInfo($this->player['steamid'], $this->options['method']));
+            }
+
+            if ($this->options['session']['enable']) {
+                $_SESSION += [$this->options['session']['key'] => $this->player];
+            }
+
+            if ($this->options['automatic_redirect']) {
+                static::redirect($this->getRedirectTo());
             }
         }
     }
 
+    #[NoReturn] public function login(): void
+    {
+        $this->redirectToSteam();
+    }
+
+    #[NoReturn] public function redirectToSteam(): void
+    {
+
+        static::redirect($this->getLoginUrl());
+    }
+
+    #[NoReturn] public function logout(bool $destroySession = false, string $redirect = null): void
+    {
+        unset($_SESSION[$this->options['session']['key']]);
+
+        if ($destroySession) {
+            session_destroy();
+        }
+
+        static::redirect($redirect ?? $this->getHome());
+    }
+
     /**
-     * Build Steam Login URL.
+     * Get a user's profile info.
      *
-     * @param string|null $return
+     * @throws InvalidArgumentException|RuntimeException|JsonException
+     */
+    public function userInfo(string $steamid, string $method = 'xml', bool $addConverted = false): array
+    {
+        if ($method === 'api' && empty($this->apiKey)) {
+            throw new InvalidArgumentException('apiKey is not set, cannot use API method.');
+        }
+
+        $info = [];
+
+        if (!empty($this->player['steamid']) && $this->player['steamid'] === $steamid) {
+            $info = $this->player;
+        }
+
+        if ($addConverted) {
+            $info = static::convert($steamid, $this->options['steam_universe']);
+        }
+
+        $curlOptions = [
+            CURLOPT_TIMEOUT => $this->options['timeout'],
+            CURLOPT_RETURNTRANSFER => true,
+        ];
+
+        try {
+            if ($method === 'api') {
+                $response = $this->setApiResponse(static::curl(sprintf(static::STEAM_API_PLAYER_SUMMARY, $this->getApiKey(), $steamid), $curlOptions))->getApiResponse();
+
+                $data = json_decode($response, true, 512, JSON_THROW_ON_ERROR);
+                $data = $data['response']['players'][0] ?? [];
+
+                if (count($data) === 0) {
+                    throw new RuntimeException('No valid API data please look into the response: ' . $response);
+                }
+
+                $info['name'] = $data['personaname'] ?? null;
+                $info['realName'] = $data['realname'] ?? null;
+                $info['playerState'] = ($data['personastate'] ?? 0) !== 0 ? 'Online' : 'Offline';
+                $data['communityvisibilitystate'] ??= 1;
+                $info['privacyState'] = $data['communityvisibilitystate'] === 1 || $data['communityvisibilitystate'] === 2 ? 'Private' : 'Public';
+                $data['personastate'] ??= null;
+                $info['stateMessage'] = static::$personastates[$data['personastate']] ?? $data['personastate'];
+                $info['visibilityState'] = $data['communityvisibilitystate'] ?? null;
+                $info['avatars'] = [
+                    'small' => $data['avatar'] ?? null,
+                    'medium' => $data['avatarmedium'] ?? null,
+                    'large' => $data['avatarfull'] ?? null,
+                ];
+                $info['avatarSmall'] = $info['avatars']['small'];
+                $info['avatarMedium'] = $info['avatars']['medium'];
+                $info['avatarLarge'] = $info['avatars']['large'];
+
+                $info['joined'] = $data['timecreated'] ?? null;
+                $info['profileUrl'] = $data['profileurl'] ?? null;
+                $info['profileDataUrl'] = 'https://steamcommunity.com/profiles/' . $steamid . '?xml=1';
+            } else {
+                $response = $this->setApiResponse(static::curl(sprintf(static::STEAM_PROFILE . '?xml=1', $steamid), $curlOptions))->getApiResponse();
+
+                $data = simplexml_load_string($response, SimpleXMLElement::class, LIBXML_NOCDATA);
+
+                if ($data !== false && !isset($data->error)) {
+                    $info['name'] = (string)$data->steamID;
+                    $info['realName'] = !empty($data->realName) ? $data->realName : null;
+                    $info['playerState'] = ucfirst($data->onlineState);
+                    $info['privacyState'] = ($data->privacyState == 'friendsonly' || $data->privacyState == 'private') ? 'Private' : 'Public';
+                    $info['stateMessage'] = (string)$data->stateMessage;
+                    $info['visibilityState'] = (int)$data->visibilityState;
+                    $info['avatars'] = [
+                        'small' => (string)$data->avatarIcon,
+                        'medium' => (string)$data->avatarMedium,
+                        'large' => (string)$data->avatarFull,
+                    ];
+                    $info['avatarSmall'] = $info['avatars']['small'];
+                    $info['avatarMedium'] = $info['avatars']['medium'];
+                    $info['avatarLarge'] = $info['avatars']['large'];
+                    $info['joined'] = isset($data->memberSince) ? strtotime($data->memberSince) : null;
+                    $info['profileUrl'] = (string)($data->customURL ?? 'https://steamcommunity.com/profiles/' . $steamid);
+                    $info['profileDataUrl'] = 'https://steamcommunity.com/profiles/' . $steamid . '?xml=1';
+                } else {
+                    throw new RuntimeException('No XML data please look into this: ' . ($data['error'] ?? ''));
+                }
+            }
+        } catch (Exception $e) {
+            if ($this->isDebug()) {
+                throw $e;
+            }
+        }
+
+        return $info;
+    }
+
+    /**
+     * Setup required site parameters.
      *
-     * @throws RuntimeException if $return is not valid url
+     * @param array $site
+     * @return $this
+     */
+    public function setupSite(array $site = []): static
+    {
+        $http_host = strtok(static::getServer('HTTP_HOST'), ':');
+        $site['domain'] = $site['domain'] ?? $http_host !== false ? $http_host : 'localhost';
+
+        if (!in_array($site['domain'], $this->options['allowed_hosts'], true)) {
+            throw new InvalidArgumentException($site['domain'] . ' is not set in options.allowed_hosts');
+        }
+
+        $this->setPort($site['port'] ?? static::getServer('SERVER_PORT', 80));
+
+        $is_https = (!empty($_SERVER['HTTPS']) && static::getServer('HTTPS') !== 'off') || $this->getPort() === 443 || static::getServer('HTTP_X_FORWARDED_PROTO') === 'https';
+
+        $this->setSecure($site['secure'] ?? $is_https)
+            ->setDomain($site['domain'])
+            ->setPath($site['path'] ?? parse_url(static::getServer('REQUEST_URI'), PHP_URL_PATH))
+            ->setHost(($this->isSecure() ? 'https://' : 'http://') . $this->site['domain'] . (!$this->isSecure() && $this->site['port'] !== 80 ? ':' . $this->site['port'] : ''))
+            ->setHome($this->getHost() . $this->getPath());
+
+        return $this;
+    }
+
+    /**
+     * Check if debug is enabled.
+     *
+     * @return bool
+     */
+    public function isDebug(): bool
+    {
+        return $this->options['debug'] ?? false;
+    }
+
+    /**
+     * Set debug mode.
+     *
+     * @param bool $debug
+     * @return $this
+     */
+    public function setDebug(bool $debug): static
+    {
+        $this->options['debug'] = $debug;
+
+        return $this;
+    }
+
+    /**
+     * Get the Steam API key.
      *
      * @return string
      */
-    protected function createLoginURL(string $return = null): string
+    public function getApiKey(): string
     {
-        if (!is_null($return) && !self::isUrl($return)) {
-            throw new RuntimeException('The return URL is not valid');
-        }
-
-        $return = !empty($return) ? $return : $this->site->home;
-
-        $params = [
-            'openid.ns'         => self::OPENID_SPECS,
-            'openid.mode'       => 'checkid_setup',
-            'openid.return_to'  => $return,
-            'openid.realm'      => ($this->site->secure ? 'https://' : 'http://').$this->site->domain,
-            'openid.identity'   => self::OPENID_SPECS.'/identifier_select',
-            'openid.claimed_id' => self::OPENID_SPECS.'/identifier_select',
-        ];
-
-        return self::OPENID_STEAM.'?'.http_build_query($params);
+        return $this->apiKey;
     }
 
     /**
-     * Validate a URL.
+     * Set the Steam API key.
+     *
+     * @param string $apiKey
+     * @return SteamLogin
+     */
+    public function setApiKey(string $apiKey): static
+    {
+        $this->apiKey = $apiKey;
+
+        return $this;
+    }
+
+    /**
+     * Get the response from either the Steam API or XML profile data.
+     *
+     * @return mixed
+     */
+    public function getApiResponse(): mixed
+    {
+        return $this->apiResponse;
+    }
+
+    /**
+     * @param mixed $apiResponse
+     * @return SteamLogin
+     */
+    protected function setApiResponse(mixed $apiResponse): static
+    {
+        $this->apiResponse = $apiResponse;
+
+        return $this;
+    }
+
+    /**
+     * Get openid.return_to parameter
+     *
+     * @return string
+     */
+    public function getReturnTo(): string
+    {
+        return $this->returnTo;
+    }
+
+    /**
+     * Set openid.return_to parameter.
      *
      * @param string $url
-     *
-     * @return bool
+     * @param bool $skipValidation
+     * @return $this
      */
-    protected static function isUrl(string $url): bool
+    public function setReturnTo(string $url, bool $skipValidation = false): static
     {
-        return filter_var($url, FILTER_VALIDATE_URL);
-    }
+        if (!$skipValidation) {
+            static::validateUrl($url);
 
-    /**
-     * Checks if request post Steam Login is valid.
-     *
-     * @return bool
-     */
-    public static function validRequest(): bool
-    {
-        $valid = isset($_GET['openid_assoc_handle'], $_GET['openid_claimed_id'], $_GET['openid_sig'], $_GET['openid_signed']);
-
-        if ($valid) {
-            $valid = !empty($_GET['openid_assoc_handle']) && !empty($_GET['openid_claimed_id']) && !empty($_GET['openid_sig']) && !empty($_GET['openid_signed']);
+            if (!in_array($domain = parse_url($url, PHP_URL_HOST), $this->options['allowed_hosts'], true)) {
+                throw new InvalidArgumentException($domain . ' is not set in options.allowed_hosts');
+            }
         }
 
-        return $valid;
+        $this->returnTo = $url;
+
+        return $this;
     }
 
     /**
-     * Validate Steam Login.
+     * @return mixed
+     */
+    public function getOpenIdResponse(): mixed
+    {
+        return $this->openIdResponse;
+    }
+
+    /**
+     * @param mixed $openIdResponse
+     * @return SteamLogin
+     */
+    protected function setOpenIdResponse(mixed $openIdResponse): static
+    {
+        $this->openIdResponse = $openIdResponse;
+
+        return $this;
+    }
+
+    public function buildLoginUrl(): static
+    {
+        $params = [
+            'openid.ns' => static::OPENID_SPECS,
+            'openid.mode' => 'checkid_setup',
+            'openid.return_to' => $this->getReturnTo(),
+            'openid.realm' => $this->getHost(),
+            'openid.identity' => static::OPENID_SPECS . '/identifier_select',
+            'openid.claimed_id' => static::OPENID_SPECS . '/identifier_select',
+        ];
+
+        $this->setLoginUrl(static::OPENID_STEAM . '?' . http_build_query($params));
+
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getLoginUrl(): string
+    {
+        return $this->loginUrl;
+    }
+
+    /**
+     * @param string $loginUrl
+     */
+    protected function setLoginUrl(string $loginUrl): void
+    {
+        $this->loginUrl = $loginUrl;
+    }
+
+    public function setSecure(bool $secure): static
+    {
+        $this->site['secure'] = $secure;
+
+        return $this;
+    }
+
+    public function isSecure(): bool
+    {
+        return $this->site['secure'];
+    }
+
+    public function getDomain()
+    {
+        return $this->site['domain'];
+    }
+
+    public function setDomain(string $domain): static
+    {
+        $this->site['domain'] = $domain;
+
+        return $this;
+    }
+
+    public function getPort(): int
+    {
+        return $this->site['port'];
+    }
+
+    public function setPort(int $port = 80): static
+    {
+        $this->site['port'] = $port;
+
+        return $this;
+    }
+
+    public function getHost()
+    {
+        return $this->site['host'];
+    }
+
+    public function setHost(string $host): static
+    {
+        $this->site['host'] = $host;
+
+        return $this;
+    }
+
+    /**
+     * Absolute URL path to the website.
      *
-     * @throws RuntimeException if steamid is null
-     * @throws Exception
+     * @return string
+     */
+    public function getPath(): string
+    {
+        return $this->site['path'];
+    }
+
+    /**
+     * Set the absolute URL path to the website.
+     *
+     * @param string $path
+     * @return $this
+     */
+    public function setPath(string $path): static
+    {
+        $this->site['path'] = $path;
+
+        return $this;
+    }
+
+    public function getHome(): string
+    {
+        return $this->site['home'];
+    }
+
+    public function setHome(string $url): static
+    {
+        static::validateUrl($url);
+
+        $this->site['home'] = $url;
+
+        return $this;
+    }
+
+    public function getRedirectTo(): string
+    {
+        return $this->redirectTo;
+    }
+
+    public function setRedirectTo(string $url): static
+    {
+        static::validateUrl($url);
+
+        $this->redirectTo = $url;
+
+        return $this;
+    }
+
+    protected function setupApi(): void
+    {
+        if (!empty($this->options['api_key'])) {
+            $this->setApiKey($this->options['api_key']);
+            $this->options['method'] = 'api';
+        } elseif ($this->options['method'] === 'api') {
+            if ($this->isDebug()) {
+                throw new InvalidArgumentException('Steam API key not given and method is set to "api"');
+            }
+
+            $this->options['method'] = 'xml';
+        }
+    }
+
+    protected function setupReturnRedirect(): void
+    {
+        $returnTo = $this->options['return_to'] ?? $this->getHome();
+
+        if ($returnTo[0] === '/') {
+            $returnTo = $this->getHome() . substr($returnTo, 1);
+
+            $this->setReturnTo($returnTo, true);
+        } else {
+            $this->setReturnTo($returnTo);
+        }
+
+        $redirectTo = $this->options['redirect_to'] ?? static::getServer('redirect_to');
+
+        if (empty($redirectTo)) {
+            $redirectTo = $this->getHome();
+        }
+
+        if ($redirectTo[0] === '/') {
+            $redirectTo = $this->getHome() . substr($redirectTo, 1);
+        }
+
+        $this->setRedirectTo($redirectTo);
+    }
+
+    /**
+     * @see SteamLogin::validateOpenId()
      *
      * @return bool
      */
-    protected function validate(): bool
+    public function validate(): bool
+    {
+        return $this->validateOpenId();
+    }
+
+    /**
+     * Validate OpenID query parameters.
+     *
+     * @return bool
+     */
+    protected function validateOpenId(): bool
     {
         try {
             $params = [
-                'openid.assoc_handle' => $_GET['openid_assoc_handle'],
-                'openid.signed'       => $_GET['openid_signed'],
-                'openid.sig'          => $_GET['openid_sig'],
-                'openid.ns'           => self::OPENID_SPECS,
+                'openid.assoc_handle' => static::getQuery('openid_assoc_handle'),
+                'openid.signed' => static::getQuery('openid_signed'),
+                'openid.sig' => static::getQuery('openid_sig'),
+                'openid.ns' => static::OPENID_SPECS,
             ];
 
             foreach (explode(',', $params['openid.signed']) as $param) {
@@ -294,295 +653,165 @@ class SteamLogin
                     continue;
                 }
 
-                $params['openid.'.$param] = $_GET['openid_'.str_replace('.', '_', $param)];
+                $params['openid.' . $param] = static::getQuery('openid_' . str_replace('.', '_', $param));
             }
 
             $params['openid.mode'] = 'check_authentication';
 
             $data = http_build_query($params);
 
-            $curl = curl_init(self::OPENID_STEAM);
-            curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
-            curl_setopt($curl, CURLOPT_POST, 1);
-            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($curl, CURLOPT_TIMEOUT, (int) $this->options['timeout']);
-            curl_setopt($curl, CURLOPT_HTTPHEADER, [
-                'Accept-language: en',
-                'Content-type: application/x-www-form-urlencoded',
-                'Content-Length: '.strlen($data),
-            ]);
+            $result = $this->setOpenIdResponse(static::curl(static::OPENID_STEAM, [
+                CURLOPT_POSTFIELDS => $data,
+                CURLOPT_POST => 1,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT => $this->options['timeout'],
+                CURLOPT_HTTPHEADER => [
+                    'Accept-language: en',
+                    'Content-type: application/x-www-form-urlencoded',
+                    'Content-Length: ' . strlen($data),
+                ],
+            ]))->getOpenIdResponse();
 
-            $this->loginResponse = $result = curl_exec($curl);
-            curl_close($curl);
 
-            preg_match('#^https?://steamcommunity.com/openid/id/([\d]{17,25})#', $_GET['openid_claimed_id'], $matches);
+            preg_match('#^https?://steamcommunity.com/openid/id/(\d{17,25})#', static::getQuery('openid_claimed_id'), $matches);
             $steamid = preg_match("#is_valid\s*:\s*true#i", $result) === 1 ? (is_numeric($matches[1]) ? $matches[1] : null) : null;
 
             if (!$steamid) {
-                throw new Exception('Validation failed, try again. Response: '.$this->loginResponse);
+                throw new RuntimeException('Validation failed, try again. Steam OpenID Response: ' . $this->getOpenIdResponse());
             }
 
-            $this->player->steamid = $steamid;
-        } catch (Exception $e) {
-            if ($this->options['debug']) {
+            $this->player = static::convert($steamid, $this->options['steam_universe']);
+
+            return true;
+        } catch (RuntimeException $e) {
+            if ($this->isDebug()) {
                 throw $e;
             }
 
             return false;
         }
-
-        if ($this->options['session']['enable']) {
-            $this->player = (object) array_merge((array) self::convert($steamid, $this->options['steam_universe']), (array) $this->userInfo($steamid, $this->method));
-
-            $_SESSION += ['SteamLogin' => (array) $this->player];
-
-            self::redirect($this->redirect_to);
-        }
-
-        return true;
     }
 
     /**
-     * Convert the player's 64 bit steamid.
+     * Take a given 64 bit steamid and return also steamid2 and steamid3 representations.
      *
-     * @param      $steamid
-     * @param bool $steam_universe
-     *
-     * @return \stdClass
+     * @param string $steamid
+     * @param bool $steamUniverse
+     * @return string[]
      */
-    public static function convert($steamid, bool $steam_universe = false): stdClass
+    public static function convert(string $steamid, bool $steamUniverse = false): array
     {
-        $object = new stdClass();
-        $object->steamid = $steamid;
-
         $x = ($steamid >> 56) & 0xFF;
-        $y = $steam_universe ? $steamid & 1 : 0;
+        $y = $steamUniverse ? $steamid & 1 : 0;
         $z = ($steamid >> 1) & 0x7FFFFFF;
 
-        $object->steamid2 = "STEAM_$x:$y:$z";
-        $object->steamid3 = '[U:1:'.($z * 2 + $y).']';
+        $steamid2 = "STEAM_$x:$y:$z";
+        $steamid3 = '[U:1:' . ($z * 2 + $y) . ']';
 
-        return $object;
-    }
-
-    /**
-     * Get and returns a player's information via Steam profile XML or API.
-     *
-     * @param        $steamid
-     * @param string $method
-     * @param bool   $debug
-     *
-     * @throws Exception
-     *
-     * @return \stdClass
-     */
-    protected function userInfo($steamid, string $method = 'xml', bool $debug = false): stdClass
-    {
-        if ($steamid instanceof stdClass) {
-            $info = $steamid;
-            $steamid = $steamid->steamid;
-        } else {
-            $info = self::convert($steamid);
-        }
-
-        switch ($method) {
-            case 'api':
-                $response = self::curl($this->apiURL.'&steamids='.$steamid);
-
-                try {
-                    $data = json_decode($response, false, 512, JSON_THROW_ON_ERROR);
-                    $data = $data->response->players[0] ?? new stdClass();
-
-                    if (count((array) $data) === 0) {
-                        throw new Exception();
-                    }
-                } catch (Exception $e) {
-                    if ($debug) {
-                        throw new Exception('No valid API data please look into the response: '.$response);
-                    }
-                } finally {
-                    if (!isset($data)) {
-                        $data = new stdClass();
-                    }
-                }
-
-                $info->name = $data->personaname;
-                $info->realName = !empty($data->realname) ? $data->realname : null;
-                $info->playerState = $data->personastate !== 0 ? 'Online' : 'Offline';
-                $info->privacyState = ($data->communityvisibilitystate === 1 || $data->communityvisibilitystate === 2) ? 'Private' : 'Public';
-                $info->stateMessage = self::$personastates[$data->personastate] ?? $data->personastate;
-                $info->visibilityState = $data->communityvisibilitystate;
-                $info->avatarSmall = $data->avatar;
-                $info->avatarMedium = $data->avatarmedium;
-                $info->avatarLarge = $data->avatarfull;
-                $info->joined = $data->timecreated ?? null;
-                $info->profileUrl = $data->profileurl;
-                $info->profileDataUrl = 'https://steamcommunity.com/profiles/'.$steamid.'?xml=1';
-                break;
-            case 'xml':
-                $data = simplexml_load_string(self::curl(sprintf(self::STEAM_PROFILE.'/?xml=1', $steamid)), 'SimpleXMLElement', LIBXML_NOCDATA);
-
-                if ($data !== false && !isset($data->error)) {
-                    $info->name = (string) $data->steamID;
-                    $info->realName = !empty($data->realName) ? $data->realName : null;
-                    $info->playerState = ucfirst($data->onlineState);
-                    $info->privacyState = ($data->privacyState == 'friendsonly' || $data->privacyState == 'private') ? 'Private' : 'Public';
-                    $info->stateMessage = (string) $data->stateMessage;
-                    $info->visibilityState = (int) $data->visibilityState;
-                    $info->avatarSmall = (string) $data->avatarIcon;
-                    $info->avatarMedium = (string) $data->avatarMedium;
-                    $info->avatarLarge = (string) $data->avatarFull;
-                    $info->joined = isset($data->memberSince) ? strtotime($data->memberSince) : null;
-                    $info->profileUrl = (string) ($data->customURL ?? 'https://steamcommunity.com/profiles/'.$steamid);
-                    $info->profileDataUrl = 'https://steamcommunity.com/profiles/'.$steamid.'?xml=1';
-                } elseif ($debug) {
-                    throw new Exception('No XML data please look into this: '.($data['error'] ?? ''));
-                }
-                break;
-            default:
-                break;
-        }
-
-        return $info;
-    }
-
-    /**
-     * Basic cURL GET.
-     *
-     * @param string $url
-     *
-     * @return string
-     */
-    protected static function curl(string $url): string
-    {
-        $curl = curl_init($url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 5);
-        $data = curl_exec($curl);
-        curl_close($curl);
-
-        return $data;
-    }
-
-    /**
-     * Redirect user.
-     *
-     * @param string $url
-     */
-    protected static function redirect(string $url): void
-    {
-        header('Location: '.$url);
-        exit();
+        return [
+            'steamid' => $steamid,
+            'steamid2' => $steamid2,
+            'steamid3' => $steamid3,
+        ];
     }
 
     /**
      * Return the URL or <img> of Steam Login buttons.
      *
      * @param string $type
-     * @param bool   $img
+     * @param bool $img
      *
      * @return string
      */
     public static function button(string $type = 'small', bool $img = false): string
     {
-        return ($img === true ? '<img src="' : '').'https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_0'.($type === 'small' ? 1 : 2).'.png'.($img === true ? '" />' : '');
+        $buttons = [
+            'small_classic' => 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_small.png',
+            'large_classic' => 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_large_noborder.png',
+            'large_classic_border' => 'https://steamcdn-a.akamaihd.net/steamcommunity/public/images/steamworks_docs/english/sits_large_border.png',
+            'small' => 'https://community.cloudflare.steamstatic.com/public/images/signinthroughsteam/sits_01.png',
+            'large' => 'https://community.cloudflare.steamstatic.com/public/images/signinthroughsteam/sits_02.png',
+        ];
+
+        return ($img === true ? '<img src="' : '') . ($buttons[$type] ?? $buttons['small']) . ($img === true ? '" alt="Sign in through Steam" />' : '');
     }
 
     /**
-     * Set the API key manually.
+     * Getter for $_SERVER
      *
      * @param string $key
-     *
-     * @return \kanalumaddela\SteamLogin\SteamLogin
+     * @param $default
+     * @return mixed|null
      */
-    public function setKey(string $key): SteamLogin
+    protected static function getServer(string $key, $default = null): mixed
     {
-        $this->apiKey = $key;
-        $this->apiURL = sprintf(self::STEAM_API, $this->apiKey);
-
-        return $this;
+        return $_SERVER[$key] ?? $default;
     }
 
     /**
-     * Return login URL.
+     * Getter for $_GET
      *
-     * @return string
+     * @param string $key
+     * @param $default
+     * @return mixed|null
      */
-    public function getLoginURL(): string
+    protected static function getQuery(string $key, $default = null): mixed
     {
-        return $this->loginURL;
+        return $_GET[$key] ?? $default;
     }
 
     /**
-     * Return API method.
+     * Validate a URL.
      *
-     * @return string
+     * @param string $url
+     * @return bool
      */
-    public function getMethod(): string
+    protected static function isUrl(string $url): bool
     {
-        return $this->options['method'];
+        return filter_var($url, FILTER_VALIDATE_URL);
+    }
+
+    protected static function validateUrl(string $url): void
+    {
+        if (!static::isUrl($url)) {
+            throw new InvalidArgumentException($url . ' is not a valid URL!');
+        }
     }
 
     /**
-     * @param string $method
+     * Check the current request matches post Steam login is valid
      *
-     * @return \kanalumaddela\SteamLogin\SteamLogin
+     * @return bool
      */
-    public function setMethod(string $method): SteamLogin
+    protected static function isValidOpenIdRequest(): bool
     {
-        $this->method = $method;
-
-        return $this;
+        return !empty($_GET['openid_assoc_handle']) && !empty($_GET['openid_claimed_id']) && !empty($_GET['openid_sig']) && !empty($_GET['openid_signed']);
     }
 
     /**
-     * Alias function for getPlayer(true).
+     * Redirect to a given URL.
      *
-     * @throws Exception
-     *
-     * @return \stdClass
+     * @param string $url
+     * @return void
      */
-    public function getPlayerInfo()
+    #[NoReturn] protected static function redirect(string $url): void
     {
-        return $this->getPlayer(true);
+        header('Location: ' . $url);
+        exit();
     }
 
-    /**
-     * Convert a player's steamid and get their profile info.
-     *
-     * @param bool $info choose whether or not to retrieve their profile info
-     *
-     * @throws Exception
-     *
-     * @return \stdClass
-     */
-    public function getPlayer(bool $info = false)
+    protected static function curl(string $url, array $options = []): bool|string
     {
-        $this->player = self::convert($this->player->steamid, $this->options['steam_universe']);
-        if ($info) {
-            $this->player = (object) array_merge((array) $this->player, (array) $this->userInfo($this->player->steamid, $this->method));
+        $curl = curl_init($url);
+
+        foreach ($options as $option => $value) {
+            curl_setopt($curl, $option, $value);
         }
 
-        return $this->player;
+        $data = curl_exec($curl);
+        curl_close($curl);
+
+        return $data;
     }
 
-    /**
-     * Redirect user to steam.
-     */
-    public function login(): void
-    {
-        unset($_SESSION['SteamLogin']);
-
-        self::redirect($this->loginURL);
-    }
-
-    /**
-     * Logout user.
-     */
-    public function logout(): void
-    {
-        unset($_SESSION['SteamLogin']);
-
-        self::redirect($this->site->home);
-    }
 }

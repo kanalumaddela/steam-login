@@ -17,10 +17,22 @@
         }
     },
     "require": {
-        "php": "^7.4|^8.0",
+        "php": "^8.1",
         "ext-curl": "*",
         "ext-json": "*",
         "ext-libxml": "*",
         "ext-simplexml": "*"
+    },
+    "require-dev": {
+        "pestphp/pest": "^1.22"
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "suggest": {
+        "kanalumaddela/laravel-steam-login": "Steam Auth for Laravel applications",
+        "xpaw/steamid": "SteamID library to handle proper steamid validation"
     }
 }
