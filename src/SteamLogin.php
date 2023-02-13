@@ -68,7 +68,7 @@ class SteamLogin
         'steam_universe'       => false,
         'retrieve_info'        => false,
         'automatic_validation' => true,
-        'automatic_redirect'   => true,
+        'automatic_redirect'   => false,
         'session'              => [
             'enable' => true,
             'key'    => 'SteamLogin',
@@ -416,7 +416,7 @@ class SteamLogin
 
         $this->returnTo = $url;
 
-        return $this;
+        return $this->buildLoginUrl();
     }
 
     /**
@@ -453,6 +453,11 @@ class SteamLogin
         $this->setLoginUrl(static::OPENID_STEAM.'?'.\http_build_query($params));
 
         return $this;
+    }
+
+    public function loginButtonLink(string $type = 'small'): string
+    {
+        return '<a href="'.$this->getLoginURL().'">'.static::button($type, true).'</a>';
     }
 
     /**
@@ -538,7 +543,7 @@ class SteamLogin
      */
     public function setPath(string $path): static
     {
-        $this->site['path'] = $path;
+        $this->site['path'] = \rtrim($path, '/');
 
         return $this;
     }
@@ -590,21 +595,20 @@ class SteamLogin
         $returnTo = $this->options['return_to'] ?? $this->getHome();
 
         if ($returnTo[0] === '/') {
-            $returnTo = $this->getHome().\substr($returnTo, 1);
-
+            $returnTo = $this->getHome().$returnTo;
             $this->setReturnTo($returnTo, true);
         } else {
             $this->setReturnTo($returnTo);
         }
 
-        $redirectTo = $this->options['redirect_to'] ?? static::getServer('redirect_to');
+        $redirectTo = $this->options['redirect_to'] ?? static::getQuery('redirect_to');
 
         if (empty($redirectTo)) {
             $redirectTo = $this->getHome();
         }
 
         if ($redirectTo[0] === '/') {
-            $redirectTo = $this->getHome().\substr($redirectTo, 1);
+            $redirectTo = $this->getHome().$redirectTo;
         }
 
         $this->setRedirectTo($redirectTo);
@@ -660,7 +664,8 @@ class SteamLogin
             ]))->getOpenIdResponse();
 
             \preg_match('#^https?://steamcommunity.com/openid/id/(\d{17,25})#', static::getQuery('openid_claimed_id'), $matches);
-            $steamid = \preg_match("#is_valid\s*:\s*true#i", $result) === 1 ? (\is_numeric($matches[1]) ? $matches[1] : null) : null;
+
+            $steamid = \preg_match("#is_valid\s*:\s*true#i", $result) === 1 && \is_numeric($matches[1]) ? $matches[1] : null;
 
             if (!$steamid) {
                 throw new RuntimeException('Validation failed, try again. Steam OpenID Response: '.$this->getOpenIdResponse());

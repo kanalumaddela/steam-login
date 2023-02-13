@@ -26,4 +26,9 @@ class SteamLoginFacade
     {
         static::$steamLogin = $steamLogin;
     }
+
+    public static function instance(): SteamLogin
+    {
+        return static::$steamLogin;
+    }
 }
