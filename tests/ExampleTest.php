@@ -1,6 +1,6 @@
 <?php
 
-beforeEach(function() {
+beforeEach(function () {
     $_SERVER['SERVER_PORT'] = 80;
     $_SERVER['HTTP_HOST'] = '127.0.0.1:80';
 
