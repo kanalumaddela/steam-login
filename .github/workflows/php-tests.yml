@@ -29,7 +29,7 @@ jobs:
 #          ${{ runner.os }}-php-
 
     - name: Install dependencies
-    - uses: php-actions/composer@v6
+      uses: php-actions/composer@v6
     
     - name: PHP pest
       run: vendor/bin/pest
