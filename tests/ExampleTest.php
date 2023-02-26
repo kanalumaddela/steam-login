@@ -55,8 +55,4 @@ test('stuff', function () {
 
     $this->steamLogin->setDomain($domain);
     $this->assertEquals($domain, $this->steamLogin->getDomain());
-
-    $this->steamLogin->setDomain($domain);
-
-    $this->assertEquals('127.0.0.1', $this->steamLogin->getDomain());
 });
