@@ -47,3 +47,18 @@ test('test types', function () {
     $this->assertIsString($this->steamLogin->getLoginUrl());
     $this->assertIsString($this->steamLogin->getRedirectTo());
 });
+
+test('stuff', function () {
+    $this->assertEquals($_SERVER['SERVER_PORT'], $this->steamLogin->getPort());
+
+    $domain = 'localhost';
+
+    $this->steamLogin->setDomain($domain);
+    $this->assertEquals($domain, $this->steamLogin->getDomain());
+
+    $this->steamLogin->setDomain($domain);
+
+    $this->assertEquals('127.0.0.1', $this->steamLogin->getDomain());
+
+
+});

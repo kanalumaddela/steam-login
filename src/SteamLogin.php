@@ -199,6 +199,16 @@ class SteamLogin
         static::redirect($redirect ?? $this->getHome());
     }
 
+    public function getUser(): array
+    {
+        return $this->player;
+    }
+
+    public function getPlayer(): array
+    {
+        return $this->getUser();
+    }
+
     /**
      * Get a user's profile info.
      *
