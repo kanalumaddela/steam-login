@@ -11,7 +11,6 @@ use SimpleXMLElement;
 use function array_merge;
 use function array_replace_recursive;
 use function count;
-use function curl_close;
 use function curl_exec;
 use function curl_init;
 use function curl_setopt;
@@ -895,7 +894,7 @@ class SteamLogin
         }
 
         $data = curl_exec($curl);
-        curl_close($curl);
+        unset($curl);
 
         return $data;
     }

@@ -13,7 +13,8 @@
     ],
     "autoload": {
         "psr-4": {
-            "kanalumaddela\\SteamLogin\\": "src/"
+            "kanalumaddela\\SteamLogin\\": "src/",
+            "Tests\\": "tests/"
         }
     },
     "require": {
@@ -24,7 +25,7 @@
         "ext-simplexml": "*"
     },
     "require-dev": {
-        "pestphp/pest": "^1.22"
+        "pestphp/pest": "^4.1"
     },
     "config": {
         "allow-plugins": {
