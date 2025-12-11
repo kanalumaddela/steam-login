@@ -8,6 +8,7 @@ use JetBrains\PhpStorm\NoReturn;
 use JsonException;
 use RuntimeException;
 use SimpleXMLElement;
+
 use function array_merge;
 use function array_replace_recursive;
 use function count;
@@ -538,7 +539,7 @@ class SteamLogin
             'openid.claimed_id' => static::OPENID_SPECS.'/identifier_select',
         ];
 
-        $this->setLoginUrl(static::OPENID_STEAM.'?'. http_build_query($params));
+        $this->setLoginUrl(static::OPENID_STEAM.'?'.http_build_query($params));
 
         return $this;
     }
@@ -732,7 +733,7 @@ class SteamLogin
                     continue;
                 }
 
-                $params['openid.'.$param] = static::getQuery('openid_'. str_replace('.', '_', $param));
+                $params['openid.'.$param] = static::getQuery('openid_'.str_replace('.', '_', $param));
             }
 
             $params['openid.mode'] = 'check_authentication';
@@ -747,7 +748,7 @@ class SteamLogin
                 CURLOPT_HTTPHEADER     => [
                     'Accept-language: en',
                     'Content-type: application/x-www-form-urlencoded',
-                    'Content-Length: '. strlen($data),
+                    'Content-Length: '.strlen($data),
                 ],
             ]))->getOpenIdResponse();
 
