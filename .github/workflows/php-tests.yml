@@ -1,4 +1,4 @@
-name: Run PHP tests
+name: Run PHP Pest
 
 on:
   push:
@@ -14,7 +14,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Setup PHP Action
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
+
+    - uses: actions/checkout@v6
 
     - name: Validate composer.json and composer.lock
       run: composer validate --strict
@@ -33,9 +38,3 @@ jobs:
     
     - name: PHP pest
       run: vendor/bin/pest
-
-    # Add a test script to composer.json, for instance: "test": "vendor/bin/phpunit"
-    # Docs: https://getcomposer.org/doc/articles/scripts.md
-
-    # - name: Run test suite
-    #   run: composer run-script test
