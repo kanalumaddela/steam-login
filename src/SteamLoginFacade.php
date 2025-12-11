@@ -3,7 +3,6 @@
 namespace kanalumaddela\SteamLogin;
 
 use RuntimeException;
-use function call_user_func_array;
 
 /**
  * @method
@@ -20,7 +19,7 @@ class SteamLoginFacade
 
         $arguments ??= [];
 
-        return call_user_func_array([static::$steamLogin, $name], $arguments);
+        return \call_user_func_array([static::$steamLogin, $name], $arguments);
     }
 
     public static function bind(SteamLogin $steamLogin): void
